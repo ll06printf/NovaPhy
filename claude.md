@@ -25,23 +25,25 @@ Working directory: `E:\NovaPhy`
 - `#pragma once` for include guards
 - Namespace: `novaphy` for all code
 - Spatial algebra convention: **[angular; linear]** (Featherstone convention)
+- Contact normal convention: **from body_a toward body_b** (positive impulse separates)
 
 ### Python
 - Package: `novaphy` (imports from `novaphy._core` C++ extension)
 - Visualization: `novaphy.viz` module using Polyscope
 - Demos: `demos/` directory, each script is standalone
+- Use `set_linear_velocity()` / `set_angular_velocity()` to modify state (direct array assignment doesn't work through bindings)
 
 ### Naming
 - C++ classes/structs: `PascalCase` (e.g., `RigidBody`, `SweepAndPrune`)
 - C++ functions/methods: `snake_case` (e.g., `forward_kinematics`, `compute_aabb`)
 - C++ member variables: `snake_case` with trailing underscore for private (e.g., `pairs_`)
 - Python: standard PEP 8
-- Files: `snake_case.h`, `snake_case.cpp`
 
 ## Build System
 
 - **CMake** root at `CMakeLists.txt`
-- **vcpkg** for C++ deps (eigen3, pybind11, gtest) - manifest in `vcpkg.json`
+- **vcpkg** for C++ deps (eigen3, gtest) - manifest in `vcpkg.json`, path: `F:/vcpkg`
+- **pybind11** via pip (NOT vcpkg, to avoid Python version conflicts)
 - **scikit-build-core** for pip install - config in `pyproject.toml`
 - **Conda** for Python env - config in `environment.yml`
 
@@ -49,12 +51,7 @@ Working directory: `E:\NovaPhy`
 ```bash
 # Development install
 conda activate novaphy
-pip install -e ".[dev]"
-
-# C++ tests (standalone build)
-cmake --preset default
-cmake --build build
-cd build && ctest --output-on-failure
+pip install -e .
 
 # Python tests
 pytest tests/python/ -v
@@ -67,25 +64,23 @@ python demos/demo_stack.py
 
 | Directory | Purpose |
 |-----------|---------|
-| `include/novaphy/math/` | Math types, spatial algebra |
-| `include/novaphy/core/` | Body, Shape, Joint, Model, AABB, Contact |
-| `include/novaphy/collision/` | Broadphase, Narrowphase |
-| `include/novaphy/dynamics/` | Integrator, Solvers, Featherstone |
-| `include/novaphy/sim/` | World, State, Solver interface |
+| `include/novaphy/math/` | Math types (Vec3f, Mat3f, Quatf), spatial algebra, utilities |
+| `include/novaphy/core/` | Body, Shape, Joint, Articulation, Model, ModelBuilder, AABB, Contact |
+| `include/novaphy/collision/` | Broadphase (SAP), Narrowphase (5 collision pairs) |
+| `include/novaphy/dynamics/` | Integrator, FreeBodySolver, Featherstone, ArticulatedSolver |
+| `include/novaphy/sim/` | World, SimState |
 | `src/` | C++ implementations (mirrors include/) |
-| `python/novaphy/` | Python package |
-| `python/bindings/` | pybind11 binding files |
-| `tests/cpp/` | Google Test C++ tests |
-| `tests/python/` | pytest Python tests |
-| `demos/` | 10 demo scripts + shared utils |
+| `python/novaphy/` | Python package (`__init__.py`, `viz.py`) |
+| `python/bindings/` | pybind11 binding files (bind_math/core/collision/sim/dynamics) |
+| `tests/python/` | pytest test files (4 files, 38 tests) |
+| `demos/` | 10 demo scripts + shared `demo_utils.py` |
 
 ## Testing Rules
 
-- Every new C++ feature needs a Google Test in `tests/cpp/`
 - Every new Python-exposed feature needs a pytest in `tests/python/`
-- Test names: `test_<module>.cpp` / `test_<module>.py`
-- Use analytical comparisons for physics (free fall, pendulum period)
-- Tolerance: 1% for 1000 steps at dt=1/240
+- Test names: `test_<module>.py`
+- Use analytical comparisons for physics (free fall, pendulum period, energy conservation)
+- All 38 tests must pass before committing
 
 ## Key Design Patterns
 
@@ -93,3 +88,11 @@ python demos/demo_stack.py
 - Collision: broadphase filters, narrowphase generates contacts, solver resolves
 - Featherstone: FK -> bias forces (RNEA) -> mass matrix (CRBA) -> Cholesky solve -> integrate
 - Contact solver: accumulated impulse clamping, warm starting, Baumgarte stabilization
+- Narrowphase sets body_a/body_b and normal direction; World.step() does NOT override body indices
+
+## Known Quirks
+
+- vcpkg pybind11 conflicts with conda Python — use pip pybind11 instead
+- Python bindings return copies of std::vector — use setter methods to modify C++ state
+- Plane shapes use body_index=-1 (world-owned, always static)
+- Free joint q = [px, py, pz, qx, qy, qz, qw] (7 DOF), qd = [wx, wy, wz, vx, vy, vz] (6 DOF)
