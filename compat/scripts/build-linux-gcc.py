@@ -61,6 +61,13 @@ def main():
         action="store_true",
         help="Run cmake configuration step without scikit-build"
     )
+
+    parser.add_argument(
+        "--install-prefix",
+        type=str,
+        default=None,
+        help="Installation prefix for CMake (only used with --cmake-standalone)"
+    )
     
     args = parser.parse_args()
     
@@ -71,13 +78,18 @@ def main():
     verbose_flag = args.verbose
     build_dir = args.build_dir
     cmake_standalone = args.cmake_standalone
-    
+    install_prefix = args.install_prefix
+
     # Select preset based on IPC option
     if enable_ipc:
         cmake_args = ["--preset=ipc"]
-
     else:
         cmake_args = ["--preset=default"]
+
+    if install_prefix and cmake_standalone:
+        cmake_args.append(f"--install-prefix={install_prefix}")
+    elif install_prefix and not cmake_standalone:
+        print("Warning: --install-prefix is only used with --cmake-standalone. Ignoring it.")
 
     if gcc_dir:
         gcc_path = os.path.join(gcc_dir, "bin", "gcc")
@@ -98,6 +110,7 @@ def main():
             cmake_args.append(f"-DCMAKE_CUDA_HOST_COMPILER={gpp_path}")
             cuda_include = os.path.join(cuda_dir, "include")
             gcc_include = os.path.join(gcc_dir, "include")
+            # Think carefully, this flags realy needed?
             nvcc_flags = [f"--system-include={cuda_include},{gcc_include}"]
             cmake_args.append(f"-DCMAKE_CUDA_FLAGS=\"{' '.join(nvcc_flags)}\"")
 

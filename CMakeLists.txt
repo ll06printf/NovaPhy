@@ -3,9 +3,15 @@ cmake_minimum_required(VERSION 3.15...4.0)
 # ---------- Optional IPC support via libuipc ----------
 # Must be declared before project() so vcpkg installs the 'ipc' feature deps.
 option(NOVAPHY_WITH_IPC "Build with libuipc IPC support (requires CUDA >= 12.4)" OFF)
+option(NOVAPHY_BUNDLE_UIPC "Bundle libuipc with NovaPhy package. If disabled, novaphy will attempt to find it system-wide." ON)
 
 if(NOVAPHY_WITH_IPC)
     list(APPEND VCPKG_MANIFEST_FEATURES "ipc")
+endif()
+
+if (NOVAPHY_BUNDLE_UIPC AND NOT NOVAPHY_WITH_IPC)
+    message(WARNING "NOVAPHY_BUNDLE_UIPC is enabled but NOVAPHY_WITH_IPC is disabled. Ignoring NOVAPHY_BUNDLE_UIPC.")
+    set(NOVAPHY_BUNDLE_UIPC OFF CACHE BOOL "" FORCE)
 endif()
 
 # ---------- Project setup ----------
@@ -103,4 +109,24 @@ if(NOT DEFINED SKBUILD)
         enable_testing()
         add_subdirectory(tests)
     endif()
+
+    # Install CMake config files
+    include(CMakePackageConfigHelpers)
+    write_basic_package_version_file(
+        "${CMAKE_CURRENT_BINARY_DIR}/novaphyConfigVersion.cmake"
+        VERSION ${PROJECT_VERSION}
+        COMPATIBILITY AnyNewerVersion
+    )
+
+    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/novaphyConfig.cmake" 
+    [====[
+        include(${CMAKE_CURRENT_LIST_DIR}/novaphyCoreTargets.cmake)
+    ]====])
+
+    install(FILES
+        "${CMAKE_CURRENT_BINARY_DIR}/novaphyConfigVersion.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/novaphyConfig.cmake"
+        DESTINATION lib/cmake/novaphy
+        COMPONENT core
+    )
 endif()
