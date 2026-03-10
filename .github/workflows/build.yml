@@ -1,4 +1,4 @@
-name: CI
+name: Build
 
 on:
   push:
@@ -33,7 +33,7 @@ jobs:
 
         - name: Build
           shell: bash
-          run: cmake --build build --preset=default-ci
+          run: cmake --build build
 
         - name: Test
           shell: bash
@@ -77,6 +77,8 @@ jobs:
           run: pytest tests/python/ -v
 
         - name: Package wheel
+          env:
+            CMAKE_ARGS: "--preset=default-ci"
           run: python -m build --wheel --outdir dist -C build-dir=build
 
         - name: Upload artifact
