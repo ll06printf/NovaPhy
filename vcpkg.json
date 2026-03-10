@@ -24,6 +24,12 @@
                 "cpptrace",
                 "octree"
             ]
+        },
+        "cmake-standalone": {
+            "description": "CMake standalone build supprot",
+            "dependencies": [
+                "pybind11"
+            ]
         }
     },
     "overrides": [
