@@ -24,16 +24,16 @@
                 "cpptrace",
                 "octree"
             ]
-        },
-        "cmake-standalone": {
-            "description": "CMake standalone build supprot",
-            "dependencies": [
-                "pybind11"
-            ]
         }
     },
     "overrides": [
-        { "name": "fmt", "version": "10.2.1" },
-        { "name": "spdlog", "version": "1.12.0" }
+        {
+            "name": "fmt",
+            "version": "10.2.1"
+        },
+        {
+            "name": "spdlog",
+            "version": "1.12.0"
+        }
     ]
 }
