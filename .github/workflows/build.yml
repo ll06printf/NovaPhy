@@ -37,7 +37,7 @@ jobs:
 
         - name: Test
           shell: bash
-          run: ctest --test-dir build --preset=default-ci
+          run: ctest --test-dir build
 
         - name: Package
           shell: bash
@@ -71,7 +71,7 @@ jobs:
         - name: Build and install
           env: 
             CMAKE_ARGS: "--preset=default-ci"
-          run: pip install . -C build-dir=build
+          run: pip install . -C build-dir=build -v
 
         - name: Run tests
           run: pytest tests/python/ -v
