@@ -29,15 +29,15 @@ jobs:
           shell: bash
           run: |
             export CMAKE_PREFIX_PATH=$(python -m pybind11 --cmakedir)
-            cmake -S . -B build --preset=default-ci
+            cmake --preset=default-ci
 
         - name: Build
           shell: bash
-          run: cmake --build build
+          run: cmake --build --preset=default-ci
 
         - name: Test
           shell: bash
-          run: ctest --test-dir build
+          run: ctest --preset=default-ci
 
         - name: Package
           shell: bash

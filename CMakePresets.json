@@ -60,7 +60,18 @@
         },
         {
             "name": "default-ci",
-            "configurePreset": "default-ci"
+            "configurePreset": "default-ci",
+            "configuration": "Release"
+        }
+    ],
+    "testPresets": [
+        {
+            "name": "default-ci",
+            "configurePreset": "default-ci",
+            "configuration": "Release",
+            "output": {
+                "outputOnFailure": true
+            }
         }
     ]
 }
