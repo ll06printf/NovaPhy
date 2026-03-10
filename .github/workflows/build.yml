@@ -40,9 +40,10 @@ jobs:
           run: ctest --preset=default-ci
 
         - name: Package
+          # TODO : The binary directory here is hardcoded.
           shell: bash
           run : |
-            cmake --install build --prefix dist
+            cmake --install build-ci --prefix dist
 
         - name: Upload artifact
           uses: actions/upload-artifact@v4
@@ -71,7 +72,7 @@ jobs:
         - name: Build and install
           env: 
             CMAKE_ARGS: "--preset=default-ci"
-          run: pip install . -C build-dir=build -v
+          run: pip install . -C build-dir=build-ci -v
 
         - name: Run tests
           run: pytest tests/python/ -v
@@ -79,7 +80,7 @@ jobs:
         - name: Package wheel
           env:
             CMAKE_ARGS: "--preset=default-ci"
-          run: python -m build --wheel --outdir dist -C build-dir=build
+          run: python -m build --wheel --outdir dist -C build-dir=build-ci
 
         - name: Upload artifact
           uses: actions/upload-artifact@v4
