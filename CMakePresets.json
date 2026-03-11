@@ -43,6 +43,13 @@
             "binaryDir": "${sourceDir}/build-ci",
             "inherits": "default",
             "toolchainFile": "$env{VCPKG_INSTALLATION_ROOT}/scripts/buildsystems/vcpkg.cmake"
+        },
+        {
+            "name": "ipc-ci",
+            "inherits": "default-ci",
+            "cacheVariables": {
+                "NOVAPHY_WITH_IPC": "ON"
+            }
         }
     ],
     "buildPresets": [
@@ -62,12 +69,25 @@
             "name": "default-ci",
             "configurePreset": "default-ci",
             "configuration": "Release"
+        },
+        {
+            "name": "ipc-ci",
+            "configurePreset": "ipc-ci",
+            "configuration": "Release"
         }
     ],
     "testPresets": [
         {
             "name": "default-ci",
             "configurePreset": "default-ci",
+            "configuration": "Release",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "ipc-ci",
+            "configurePreset": "ipc-ci",
             "configuration": "Release",
             "output": {
                 "outputOnFailure": true
