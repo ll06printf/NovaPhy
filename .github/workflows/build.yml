@@ -39,7 +39,7 @@ jobs:
 
         - name: Build
           shell: bash
-          run: cmake --build --preset=${{ matrix.preset }}-ci
+          run: cmake --build --preset=${{ matrix.preset }}-ci -v
 
         - name: Test
           shell: bash
