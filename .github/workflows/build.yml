@@ -86,7 +86,7 @@ jobs:
           env: 
             # Although the preset has defined the generator, skbuild just scan the -G option.
             # On Windows, specify MSVC compiler to avoid MinGW selection with Ninja
-            CMAKE_ARGS: "--preset=${{ matrix.preset }}-ci -G Ninja -DCMAKE_CXX_COMPILER=cl -DCMAKE_C_COMPILER=cl"
+            CMAKE_ARGS: "--preset=${{ matrix.preset }}-ci -G Ninja -DCMAKE_CXX_COMPILER=cl.exe -DCMAKE_C_COMPILER=cl.exe"
           run: python -m build . -C build-dir=build-ci -v
 
         - name: Build and packaging (Linux)
