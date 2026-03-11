@@ -42,6 +42,7 @@
             "name": "default-ci",
             "binaryDir": "${sourceDir}/build-ci",
             "inherits": "default",
+            "generator": "Ninja",
             "toolchainFile": "$env{VCPKG_INSTALLATION_ROOT}/scripts/buildsystems/vcpkg.cmake"
         },
         {
