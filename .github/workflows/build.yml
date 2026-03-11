@@ -81,22 +81,20 @@ jobs:
         - name: Setup sccache
           uses: mozilla-actions/sccache-action@v0.0.9
 
-        - name: Build and install
-          env: 
-            # Although the preset has defined the generator, skbuild just scan the -G option.
-            CMAKE_ARGS: "--preset=${{ matrix.preset }}-ci -G Ninja"
-          run: pip install . -C build-dir=build-ci -v
-
-        - name: Run tests
-          run: pytest tests/python/ -v
-
-        - name: Package wheel
+        - name: Build and Package wheel
           env:
-            CMAKE_ARGS: "--preset=${{ matrix.preset }}-ci"
-          run: python -m build --wheel --outdir dist -C build-dir=build-ci
+            CMAKE_ARGS: "--preset=${{ matrix.preset }}-ci -G Ninja"
+          run: python -m build --wheel --outdir dist -v -C build-dir=build-ci 
 
         - name: Upload artifact
           uses: actions/upload-artifact@v6
           with:
             name: novaphy-${{ matrix.os }}-python${{ matrix.python-version }}
             path: dist/*
+
+        - name: Install wheel
+          run: pip install dist/*.whl -v
+
+        - name: Run tests
+          run: pytest tests/python/ -v
+
