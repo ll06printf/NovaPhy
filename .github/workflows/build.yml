@@ -31,6 +31,10 @@ jobs:
         - name: Setup pybind11
           run: pip install pybind11
 
+        - name: Setup MSVC (Windows)
+          if: runner.os == 'Windows'
+          uses: ilammy/msvc-dev-cmd@v1.13.0
+
         - name: Configure
           shell: bash
           run: |
@@ -80,6 +84,10 @@ jobs:
 
         - name: Setup sccache
           uses: mozilla-actions/sccache-action@v0.0.9
+
+        - name: Setup MSVC (Windows)
+          if: runner.os == 'Windows'
+          uses: ilammy/msvc-dev-cmd@v1.13.0
 
         - name: Build and packaing (Windows)
           if: runner.os == 'Windows'
