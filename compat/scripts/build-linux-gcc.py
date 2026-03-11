@@ -75,6 +75,13 @@ def main():
         help="Build a wheel package instead of installing"
     )
 
+    parser.add_argument(
+        "--launcher",
+        type=str,
+        default=None,
+        help="Program to launch compiler, etc ccache."
+    )
+
     args = parser.parse_args()
     
     # Process arguments
@@ -86,6 +93,7 @@ def main():
     cmake_standalone = args.cmake_standalone
     install_prefix = args.install_prefix
     build_wheel = args.wheel
+    launcher = args.launcher
 
     # Select preset based on IPC option
     if enable_ipc:
@@ -124,6 +132,11 @@ def main():
             # Think carefully, this flags realy needed?
             nvcc_flags = [f"--system-include={cuda_include},{gcc_include}"]
             cmake_args.append(f"-DCMAKE_CUDA_FLAGS=\"{' '.join(nvcc_flags)}\"")
+
+    if launcher:
+        cmake_args.append(f"-DCMAKE_CUDA_COMPILER_LAUNCHER={launcher}")
+        cmake_args.append(f"-DCMAKE_CXX_COMPILER_LAUNCHER={launcher}")
+        cmake_args.append(f"-DCMAKE_C_COMPILER_LAUNCHER={launcher}")
 
     print("🧰Build configuration summary")
     print("CMAKE_ARGS: ", " ".join(cmake_args))
