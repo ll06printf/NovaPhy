@@ -81,10 +81,19 @@ jobs:
         - name: Setup sccache
           uses: mozilla-actions/sccache-action@v0.0.9
 
-        - name: Build and Package wheel
-          env:
-            CMAKE_ARGS: "--preset=${{ matrix.preset }}-ci -G Ninja"
-          run: python -m build --wheel --outdir dist -v -C build-dir=build-ci 
+        - name: Build and packaing (Windows)
+          if: runner.os == 'Windows'
+          env: 
+            # Although the preset has defined the generator, skbuild just scan the -G option.
+            # On Windows, specify MSVC compiler to avoid MinGW selection with Ninja
+            CMAKE_ARGS: "--preset=${{ matrix.preset }}-ci -G Ninja -DCMAKE_CXX_COMPILER=cl -DCMAKE_C_COMPILER=cl"
+          run: python -m build . -C build-dir=build-ci -v
+
+        - name: Build and packaging (Linux)
+          if: runner.os != 'Windows'
+          env: 
+            CMAKE_ARGS: "--preset=${{ matrix.preset }}-ci"
+          run: python -m build . -C build-dir=build-ci -v
 
         - name: Upload artifact
           uses: actions/upload-artifact@v6
@@ -94,7 +103,7 @@ jobs:
 
         - name: Install wheel
           run: pip install dist/*.whl -v
-
+          
         - name: Run tests
           run: pytest tests/python/ -v
 
