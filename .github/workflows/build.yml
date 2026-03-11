@@ -83,7 +83,8 @@ jobs:
 
         - name: Build and install
           env: 
-            CMAKE_ARGS: "--preset=${{ matrix.preset }}-ci"
+            # Although the preset has defined the generator, skbuild just scan the -G option.
+            CMAKE_ARGS: "--preset=${{ matrix.preset }}-ci -G Ninja"
           run: pip install . -C build-dir=build-ci -v
 
         - name: Run tests
