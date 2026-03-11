@@ -52,7 +52,7 @@ jobs:
             cmake --install build-ci --prefix dist
 
         - name: Upload artifact
-          uses: actions/upload-artifact@v4
+          uses: actions/upload-artifact@v6
           with:
             name: novaphy-${{ matrix.os }}-cmakestandalone
             path: dist/
@@ -95,7 +95,7 @@ jobs:
           run: python -m build --wheel --outdir dist -C build-dir=build-ci
 
         - name: Upload artifact
-          uses: actions/upload-artifact@v4
+          uses: actions/upload-artifact@v6
           with:
             name: novaphy-${{ matrix.os }}-python${{ matrix.python-version }}
             path: dist/*
