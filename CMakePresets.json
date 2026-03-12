@@ -50,6 +50,7 @@
             "inherits": "default-ci",
             "cacheVariables": {
                 "NOVAPHY_WITH_IPC": "ON",
+                "UIPC_CUDA_ARCHITECTURES": "86",
                 "CMAKE_CUDA_ARCHITECTURES": "86"
             }
         }
