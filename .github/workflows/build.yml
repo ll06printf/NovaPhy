@@ -11,6 +11,8 @@ jobs:
     build-cmake:
       env:
         SCCACHE_GHA_ENABLED: "true"
+        # Use a workspace-local binary cache so the path works on both Linux and Windows runners.
+        VCPKG_BINARY_SOURCES: "clear;files,${{ github.workspace }}/.vcpkg-bincache,readwrite"
       strategy:
         # TODO : Remove fast fial after the workflow is verified to work correctly. This will allow all the jobs to run even if one of them fails.
         fail-fast: true
@@ -41,6 +43,17 @@ jobs:
         
         - name: Setup sccache
           uses: mozilla-actions/sccache-action@v0.0.9
+
+        - name: Cache vcpkg binary packages
+          uses: actions/cache@v4
+          with:
+            path: ${{ github.workspace }}/.vcpkg-bincache
+            key: >-
+              ${{ runner.os }}-vcpkg-${{ matrix.preset }}-${{ hashFiles('vcpkg.json',
+              'vcpkg-configuration.json', 'CMakePresets.json') }}
+            restore-keys: |
+              ${{ runner.os }}-vcpkg-${{ matrix.preset }}-
+              ${{ runner.os }}-vcpkg-
 
         - name: Setup pybind11
           run: pip install pybind11
