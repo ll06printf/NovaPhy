@@ -31,6 +31,10 @@ jobs:
           with:
             cuda: "12.4.1"
 
+        - name: Add CUDA Toolkit to PATH
+          if: matrix.preset == 'ipc'
+          run: echo "${{ steps.cuda-toolkit.outputs.CUDA_PATH }}" >> $GITHUB_PATH
+
         - uses: actions/setup-python@v6
           with:
             python-version: ${{ matrix.python-version }}
