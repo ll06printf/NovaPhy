@@ -27,7 +27,7 @@ jobs:
           if: matrix.preset == 'ipc'
           id: cuda-toolkit
           with:
-            cuda: "12.4.131"
+            cuda: "12.4.1"
 
         - uses: actions/setup-python@v6
           with:
