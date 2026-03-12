@@ -78,6 +78,7 @@ jobs:
     build-wheel:
       env:
         SCCACHE_GHA_ENABLED: "true"
+        SCCACHE_LOG: "debug"
       strategy:
         # TODO : Remove fast fial after the workflow is verified to work correctly. This will allow all the jobs to run even if one of them fails.
         fail-fast: true
