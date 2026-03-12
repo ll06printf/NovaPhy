@@ -74,11 +74,34 @@ jobs:
             echo "CUDAToolkit_ROOT=${{ steps.cuda-toolkit.outputs.CUDA_PATH }}" >> "$GITHUB_ENV"
             echo "${{ steps.cuda-toolkit.outputs.CUDA_PATH }}/bin" >> "$GITHUB_PATH"
 
-        - name: Configure
+        - name: Verify CUDA toolchain
+          if: matrix.preset == 'ipc'
           shell: bash
           run: |
-            export CMAKE_PREFIX_PATH=$(python -m pybind11 --cmakedir)
-            cmake --preset=${{ matrix.preset }}-ci
+            echo "CUDA_PATH=$CUDA_PATH"
+            echo "CUDAToolkit_ROOT=$CUDAToolkit_ROOT"
+            which nvcc || true
+            nvcc --version
+
+        - name: Configure (Windows)
+          if: runner.os == 'Windows'
+          shell: pwsh
+          run: |
+            $pybind11Dir = python -m pybind11 --cmakedir
+            $cudaRoot = "${{ steps.cuda-toolkit.outputs.CUDA_PATH }}"
+            $nvcc = Join-Path $cudaRoot "bin\\nvcc.exe"
+            cmake --preset=${{ matrix.preset }}-ci `
+              -Dpybind11_DIR="$pybind11Dir" `
+              -DCUDAToolkit_ROOT="$cudaRoot" `
+              -DCMAKE_CUDA_COMPILER="$nvcc"
+
+        - name: Configure (Linux)
+          if: runner.os != 'Windows'
+          shell: bash
+          run: |
+            cmake --preset=${{ matrix.preset }}-ci \
+              -Dpybind11_DIR="$(python -m pybind11 --cmakedir)" \
+              -DCUDAToolkit_ROOT="$CUDA_PATH"
 
         - name: Build
           shell: bash
