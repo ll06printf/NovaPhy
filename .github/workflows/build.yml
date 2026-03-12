@@ -33,10 +33,6 @@ jobs:
           with:
             cuda: "12.4.1"
 
-        - name: Add CUDA Toolkit to PATH
-          if: matrix.preset == 'ipc'
-          run: echo "${{ steps.cuda-toolkit.outputs.CUDA_PATH }}/bin" >> $GITHUB_PATH
-
         - uses: actions/setup-python@v6
           with:
             python-version: ${{ matrix.python-version }}
@@ -61,6 +57,22 @@ jobs:
         - name: Setup MSVC (Windows)
           if: runner.os == 'Windows'
           uses: ilammy/msvc-dev-cmd@v1.13.0
+
+        - name: Export CUDA environment (Windows)
+          if: matrix.preset == 'ipc' && runner.os == 'Windows'
+          shell: pwsh
+          run: |
+            "CUDA_PATH=${{ steps.cuda-toolkit.outputs.CUDA_PATH }}" >> $env:GITHUB_ENV
+            "CUDAToolkit_ROOT=${{ steps.cuda-toolkit.outputs.CUDA_PATH }}" >> $env:GITHUB_ENV
+            "${{ steps.cuda-toolkit.outputs.CUDA_PATH }}\\bin" >> $env:GITHUB_PATH
+
+        - name: Export CUDA environment (Linux)
+          if: matrix.preset == 'ipc' && runner.os != 'Windows'
+          shell: bash
+          run: |
+            echo "CUDA_PATH=${{ steps.cuda-toolkit.outputs.CUDA_PATH }}" >> "$GITHUB_ENV"
+            echo "CUDAToolkit_ROOT=${{ steps.cuda-toolkit.outputs.CUDA_PATH }}" >> "$GITHUB_ENV"
+            echo "${{ steps.cuda-toolkit.outputs.CUDA_PATH }}/bin" >> "$GITHUB_PATH"
 
         - name: Configure
           shell: bash
