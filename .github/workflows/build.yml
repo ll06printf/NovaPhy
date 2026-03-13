@@ -104,16 +104,13 @@ jobs:
               -DCUDAToolkit_ROOT="$CUDA_PATH"
 
         - name: Build
-          shell: bash
           run: cmake --build --preset=${{ matrix.preset }}-ci -v
 
         - name: Test
-          shell: bash
           run: ctest --preset=${{ matrix.preset }}-ci
 
         - name: Package
           # TODO : The binary directory here is hardcoded.
-          shell: bash
           run : |
             cmake --install build-ci --prefix dist
 
