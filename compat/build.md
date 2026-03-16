@@ -6,7 +6,7 @@
 
 TODO
 
-## Build on Linux with GCC/Clang
+## Build With GCC/Clang
 
 ### Basic
 
@@ -82,6 +82,10 @@ Compilers are described by name and major version, such as `gcc-9`. For each maj
 - GCC 15.2.1
 - ✅ nvcc-12: CUDA compilation tools, release 12.4, V12.4.131
 - nvcc-13: CUDA compilation tools, release 13.1, V13.1.115
+
+Here are problems about library conflict:
+
+- `CUDA12` has conflict implementation of some math function to `glibc 2.43` which added `noexcept` to math functions. It will break compiling with strict `noexcept` checking compiler (almost all version of Clang).
 
 ## Components Packaging and Installation
 

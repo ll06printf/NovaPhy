@@ -13,6 +13,7 @@ import os
 import sys
 import subprocess
 import shlex
+import datetime
 from pathlib import Path
 from enum import Enum
 from typing import Optional
@@ -38,6 +39,25 @@ class StandardLibrary(Enum):
 #     NVCC = 1
 #     CLANG_CUDA = 2
 
+
+class LogStyle:
+    RESET = "\033[0m"
+    DIM = "\033[2m"
+    RED = "\033[31m"
+    GREEN = "\033[32m"
+    YELLOW = "\033[33m"
+    BLUE = "\033[34m"
+    MAGENTA = "\033[35m"
+
+
+LOG_META = {
+    "DEBUG": {"color": LogStyle.MAGENTA, "emoji": "🔎"},
+    "INFO": {"color": LogStyle.BLUE, "emoji": "ℹ️"},
+    "SUCCESS": {"color": LogStyle.GREEN, "emoji": "✅"},
+    "WARN": {"color": LogStyle.YELLOW, "emoji": "⚠️"},
+    "ERROR": {"color": LogStyle.RED, "emoji": "❌"},
+}
+
 class build_config:
     def __init__(self):
         # Build direcotry
@@ -62,13 +82,32 @@ class build_config:
 
         self.enable_ipc = False
         self.verbose_output = False
+        self.use_color = sys.stdout.isatty()
 
-    def log(self, message: str) -> None:
-        print(f"[build-linux-gcc] {message}")
+    def _fmt(self, level: str, message: str) -> str:
+        timestamp = datetime.datetime.now().strftime("%H:%M:%S")
+        meta = LOG_META[level]
+        tag = f"[{timestamp}] [{level}]"
+        prefix = f"{meta['emoji']} {tag} [build-linux-gcc]"
+        if self.use_color:
+            return f"{meta['color']}{prefix}{LogStyle.RESET} {message}"
+        return f"{prefix} {message}"
+
+    def log(self, message: str, level: str = "INFO") -> None:
+        print(self._fmt(level, message))
+
+    def success(self, message: str) -> None:
+        self.log(message, "SUCCESS")
+
+    def warn(self, message: str) -> None:
+        self.log(message, "WARN")
+
+    def error(self, message: str) -> None:
+        self.log(message, "ERROR")
 
     def debug(self, message: str) -> None:
         if self.verbose_output:
-            self.log(message)
+            self.log(message, "DEBUG")
 
     def get_parser(self) -> argparse.ArgumentParser :
         parser = argparse.ArgumentParser()
@@ -123,6 +162,12 @@ class build_config:
         )
 
         parser.add_argument(
+            "--no-color",
+            action="store_true",
+            help="Disable ANSI colored log output"
+        )
+
+        parser.add_argument(
             "--build-dir",
             type=str,
             default=r"build/linux-gcc",
@@ -165,6 +210,7 @@ class build_config:
         self.cmake_standalone = args.cmake_standalone
         self.use_libcpp = args.use_libcpp
         self.build_wheel = args.wheel
+        self.use_color = self.use_color and not args.no_color
 
         self.debug(
             "Parsed args: "
@@ -212,8 +258,12 @@ class build_config:
         elif self.host_toolchain() == HostToolChain.LLVM:
             if self.use_libcpp:
                 return Path(self.llvm_dir) / "include" / "c++" / "v1"
+            elif self.gcc_dir:
+                include_dir = Path(self.gcc_dir) / "include" / "c++"
+                include_dir = next(include_dir.glob("*"), None)
+                return include_dir
             else:
-                return Path(self.llvm_dir) / "include"
+                return None
         else:
             raise ValueError("Invalid host toolchain")
 
@@ -222,7 +272,7 @@ class build_config:
             flags = []
             if self.use_libcpp:
                 flags.append("-stdlib=libc++")
-            elif self.host_toolchain() == HostToolChain.GCC:
+            elif self.gcc_dir:
                 flags.append("--gcc-toolchain=" + str(Path(self.gcc_dir)))
             return flags
         else:
@@ -236,12 +286,18 @@ class build_config:
     
     def nvcc_flags(self) -> list[str]:
         if self.cuda_dir and self.host_toolchain() != HostToolChain.Unspecifyed:
+            arg = []
             cuda_include = Path(self.cuda_dir) / "include"
             stdlib_include = self.stdlib_include()
             if stdlib_include:
-                return [f"--system-include={cuda_include},{stdlib_include}"]
+                arg += ["-isystem", str(cuda_include), "-isystem", str(stdlib_include)]
             else:
                 raise ValueError("Unexpected error: stdlib include path is None while host toolchain is specified")
+            ccflags = self.cc_flags()
+            if len(ccflags):
+                arg += ["-Xcompiler"]
+                arg += ccflags
+            return arg
         return []
 
     def setup_env(self) -> None :
@@ -254,6 +310,15 @@ class build_config:
             self.debug(f"Set CXX={cxx_path}")
         else:
             self.debug("Using default system C/C++ compilers")
+
+        cc_flags = self.cc_flags()
+        if cc_flags and len(cc_flags):
+            os.environ["CFLAGS"] = " ".join(cc_flags)
+            os.environ["CXXFLAGS"] = " ".join(cc_flags)
+            self.debug(f"Set CFLAGS={' '.join(cc_flags)}")
+            self.debug(f"Set CXXFLAGS={' '.join(cc_flags)}")
+        else:
+            self.debug("No additional compiler flags")
 
         cuda_compiler = self.cuda_compiler()
         if cuda_compiler:
@@ -278,16 +343,21 @@ class build_config:
         if self.install_prefix and self.cmake_standalone:
             args.append(f"--install-prefix={self.install_prefix}")
         elif self.install_prefix and not self.cmake_standalone:
-            print("Warning: --install-prefix is only used with --cmake-standalone. Ignoring it.")
+            self.warn("--install-prefix is only used with --cmake-standalone. Ignoring it.")
 
         if self.build_wheel and self.cmake_standalone:
-            print("Warning: --wheel option is not compatible with --cmake-standalone. Ignoring it.")
+            self.warn("--wheel option is not compatible with --cmake-standalone. Ignoring it.")
         
         compilers = self.host_compilers()
         if compilers:
             cc_path, cxx_path = compilers
             args.append(f"-DCMAKE_C_COMPILER={cc_path}")
             args.append(f"-DCMAKE_CXX_COMPILER={cxx_path}")
+
+        flags = self.cc_flags()
+        if flags and len(flags):
+            args.append(f"-DCMAKE_C_FLAGS=\"{' '.join(flags)}\"")
+            args.append(f"-DCMAKE_CXX_FLAGS=\"{' '.join(flags)}\"")
 
         cuda_compiler = self.cuda_compiler()
         if cuda_compiler:
@@ -312,27 +382,37 @@ class build_config:
 
 def main():
     cfg = build_config()
-    cfg.load_args()
-    cfg.setup_env()
-    cmake_args = cfg.cmake_args()
+    try:
+        cfg.load_args()
+        cfg.setup_env()
+        cmake_args = cfg.cmake_args()
 
-    target = cfg.build_target()
-    cfg.log(f"Build target: {target.name}")
-    cfg.log(f"Build directory: {cfg.build_dir}")
+        target = cfg.build_target()
+        cfg.log(f"Build target: {target.name}")
+        cfg.log(f"Build directory: {cfg.build_dir}")
 
-    if target == BuildTarget.CMAKE:
-        command = ["cmake", "-S", ".", "-B", cfg.build_dir, *cmake_args]
-    elif target == BuildTarget.WHEEL:
-        os.environ["CMAKE_ARGS"] = " ".join(cmake_args)
-        cfg.debug(f"Set CMAKE_ARGS={os.environ['CMAKE_ARGS']}")
-        command = [sys.executable, "-m", "pip", "wheel", ".", "-Cbuild-dir=" + cfg.build_dir]
-    else:
-        os.environ["CMAKE_ARGS"] = " ".join(cmake_args)
-        cfg.debug(f"Set CMAKE_ARGS={os.environ['CMAKE_ARGS']}")
-        command = [sys.executable, "-m", "pip", "install", ".", "-Cbuild-dir=" + cfg.build_dir]
+        os.environ["CMAKE_BUILD_PARALLEL_LEVEL"] = "8"
 
-    cfg.log(f"Running command: {shlex.join(command)}")
-    subprocess.run(command, check=True)
+        if target == BuildTarget.CMAKE:
+            command = ["cmake", "-S", ".", "-B", cfg.build_dir, *cmake_args]
+        elif target == BuildTarget.WHEEL:
+            os.environ["CMAKE_ARGS"] = " ".join(cmake_args)
+            cfg.debug(f"Set CMAKE_ARGS={os.environ['CMAKE_ARGS']}")
+            command = ["python", "-m", "pip", "wheel", ".", "-Cbuild-dir=" + cfg.build_dir]
+        else:
+            os.environ["CMAKE_ARGS"] = " ".join(cmake_args)
+            cfg.debug(f"Set CMAKE_ARGS={os.environ['CMAKE_ARGS']}")
+            command = ["python", "-m", "pip", "install", ".", "-Cbuild-dir=" + cfg.build_dir]
+
+        if cfg.verbose_output:
+            command.append("-v")
+
+        cfg.log(f"Running command: {shlex.join(command)}")
+        subprocess.run(command, check=True)
+        cfg.success("Build command completed")
+    except subprocess.CalledProcessError as exc:
+        cfg.error(f"Build command failed with exit code {exc.returncode}")
+        raise
 
 
 if __name__ == '__main__':

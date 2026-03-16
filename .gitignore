@@ -7,6 +7,7 @@ dist/
 __pycache__/
 *.pyc
 *.pyo
+*.whl
 
 # C++ artifacts
 *.o
