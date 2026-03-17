@@ -14,10 +14,10 @@ NovaPhy without IPC support only requires the following prerequisites (as mentio
 
 - [Conda](https://docs.conda.io/) (Miniconda or Anaconda)
 - [vcpkg](https://vcpkg.io/) installed. *Optional*
-- C++17 compiler
+- C++20 compiler
   - MSVC 2019+
-  - GCC 9+
-  - Clang 10+
+  - GCC 11+
+  - Clang 14+
 
 ```bash
 # Create conda environment
@@ -42,7 +42,7 @@ Thus, the prerequisites are more specific.
 - C++20 compiler
   - MSVC 2019+
   - GCC 11, 12, 13
-  - Clang 10+
+  - Clang 19+
 - CUDA 12.4
 
 ```bash
@@ -64,9 +64,12 @@ Here are some common causes of failures with specific compilers:
 | `gcc-10` | The PSTL in `libstdc++ 10` isn't compatible with `onetbb` in the current baseline. (See also [vcpkg.json](../vcpkg.json).) | Unfixable |
 | `gcc-15` | `urdfdom` expects a non-standard import for `uint32_t`, which has been removed from `libstdc++`. | Fixed [^1] |
 | `gcc-14, gcc-15` | `gcc>13` is not compatible with `nvcc-12` | Unfixable |
+| `clang-14` | Instantiate a member function with the constraint that is trivial and false. | TODO |
+| `clang <=18` | `libuipc` uses alias template deduction which isn't support by erlay `clang`. | Unfixable [^2] |
 | `nvcc-13` | **muda** expects non-strict dependent name resolution. | TODO |
 
 [^1]: The issue has been fixed by upstream maintainers with a patch. However, the patch has not been included in the current baseline (2025.07.25). Adding `-include cstdint` to your `CXXFLAGS` environment variable should resolve the problem.
+[^2]: But the alias template arguments deduction is just needed by CUDA targets. If you have another compiler to be used as CUDA host compiler (e.g. gcc 11), clang14+ could compile the project as compiler of C/C++ targets.
 
 > [!note] Clang with libstdc++
 > Clang uses `libstdc++` as the default standard library. Any crash caused by `libstdc++` also affects Clang.
@@ -80,6 +83,8 @@ Compilers are described by name and major version, such as `gcc-9`. For each maj
 - ✅ GCC 13.4.0
 - GCC 14.3.0
 - GCC 15.2.1
+- Clang 18 and below.
+- ✅ Clang 19.1.7
 - ✅ nvcc-12: CUDA compilation tools, release 12.4, V12.4.131
 - nvcc-13: CUDA compilation tools, release 13.1, V13.1.115
 
