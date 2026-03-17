@@ -299,11 +299,6 @@ class build_config:
             stdlib_include = self.stdlib_include()
             if stdlib_include:
                 arg += ["-isystem", str(cuda_include), "-isystem", str(stdlib_include)]
-
-            ccflags = self.cc_flags()
-            if len(ccflags):
-                arg += ["-Xcompiler"]
-                arg += ccflags
             return arg
         return []
 
