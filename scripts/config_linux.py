@@ -291,8 +291,7 @@ class build_config:
             stdlib_include = self.stdlib_include()
             if stdlib_include:
                 arg += ["-isystem", str(cuda_include), "-isystem", str(stdlib_include)]
-            else:
-                raise ValueError("Unexpected error: stdlib include path is None while host toolchain is specified")
+
             ccflags = self.cc_flags()
             if len(ccflags):
                 arg += ["-Xcompiler"]
@@ -404,7 +403,7 @@ def main():
             cfg.debug(f"Set CMAKE_ARGS={os.environ['CMAKE_ARGS']}")
             command = ["python", "-m", "pip", "install", ".", "-Cbuild-dir=" + cfg.build_dir]
 
-        if cfg.verbose_output:
+        if cfg.verbose_output and cfg.build_target() != BuildTarget.CMAKE:
             command.append("-v")
 
         cfg.log(f"Running command: {shlex.join(command)}")
