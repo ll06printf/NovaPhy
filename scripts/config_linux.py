@@ -83,6 +83,7 @@ class build_config:
         self.enable_ipc = False
         self.verbose_output = False
         self.use_color = sys.stdout.isatty()
+        self.cuda_architectures = ["89"]
 
     def _fmt(self, level: str, message: str) -> str:
         timestamp = datetime.datetime.now().strftime("%H:%M:%S")
@@ -193,6 +194,13 @@ class build_config:
             help="Build a wheel package instead of installing"
         )
 
+        parser.add_argument(
+            "--cuda-arch",
+            type=str,
+            default="89",
+            help="CUDA architecture(s) to target (comma-separated)"
+        )
+
         return parser
 
     def load_args(self) -> None:
@@ -210,7 +218,7 @@ class build_config:
         self.cmake_standalone = args.cmake_standalone
         self.use_libcpp = args.use_libcpp
         self.build_wheel = args.wheel
-        self.use_color = self.use_color and not args.no_color
+        self.cuda_architectures = args.cuda_arch.split(",")
 
         self.debug(
             "Parsed args: "
@@ -372,6 +380,11 @@ class build_config:
             args.append(f"-DCMAKE_CUDA_COMPILER_LAUNCHER={self.compiler_launcher}")
             args.append(f"-DCMAKE_CXX_COMPILER_LAUNCHER={self.compiler_launcher}")
             args.append(f"-DCMAKE_C_COMPILER_LAUNCHER={self.compiler_launcher}")
+
+        if self.cuda_architectures and len(self.cuda_architectures):
+            archs = ";".join(self.cuda_architectures)
+            args.append(f"-DCMAKE_CUDA_ARCHITECTURES={archs}")
+            args.append(f"-DUIPC_CUDA_ARCHITECTURES={archs}")
 
         self.debug(f"Generated CMake args: {args}")
         return args
