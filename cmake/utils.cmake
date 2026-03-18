@@ -27,9 +27,8 @@ include_guard()
 # in the same directory as the python extension library.
 
 # Enable detailed packaging logs for troubleshooting install layout issues.
-set(CACHE{NOVAPHY_PACKAGE_LOG} TYPE BOOL
-    HELP "Enable verbose logs for NovaPhy packaging utilities"
-    VALUE ON
+set(NOVAPHY_PACKAGE_LOG ON CACHE BOOL
+    "Enable verbose logs for NovaPhy packaging utilities"
 )
 
 function(_novaphy_log message_text)
@@ -43,52 +42,42 @@ endfunction()
 ############################################################
 
 function(setup_cmake_package_layout)
-    set(CACHE{NOVAPHY_INCLUDE_DST} TYPE PATH
-        HELP "The install path of public headers"
-        VALUE include
+    set(NOVAPHY_INCLUDE_DST include CACHE PATH
+        "The install path of public headers"
     )
-    set(CACHE{NOVAPHY_LIB_DST} TYPE PATH
-        HELP "The install path of libraries"
-        VALUE lib
+    set(NOVAPHY_LIB_DST lib CACHE PATH
+        "The install path of libraries"
     )
-    set(CACHE{NOVAPHY_BUNDLED_DST} TYPE PATH 
-        HELP "The install path of bundled libraries"
-        VALUE ${NOVAPHY_LIB_DST}/novaphy-bundled-libs
+    set(NOVAPHY_BUNDLED_DST ${NOVAPHY_LIB_DST}/novaphy-bundled-libs CACHE PATH 
+        "The install path of bundled libraries"
     )
-    set(CACHE{NOVAPHY_CMAKE_CONFIG_DST} TYPE PATH 
-        HELP "The install path of CMake config files"
-        VALUE ${NOVAPHY_LIB_DST}/cmake
+    set(NOVAPHY_CMAKE_CONFIG_DST ${NOVAPHY_LIB_DST}/cmake CACHE PATH 
+        "The install path of CMake config files"
     )
     _novaphy_log("CMake layout: include='${NOVAPHY_INCLUDE_DST}', lib='${NOVAPHY_LIB_DST}', bundled='${NOVAPHY_BUNDLED_DST}', config='${NOVAPHY_CMAKE_CONFIG_DST}'")
 endfunction()
 
 function(setup_wheel_layout)
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-        set(CACHE{NOVAPHY_WHEEL_DST_PREFIX} TYPE PATH
-            HELP "The install path prefix of wheel package for scikit-build"
-            VALUE novaphy
+        set(NOVAPHY_WHEEL_DST_PREFIX novaphy CACHE PATH
+            "The install path prefix of wheel package for scikit-build"
         )
-        set(CACHE{NOVAPHY_WHL_LIB_DST} TYPE PATH
-            HELP "The install path of library for scikit-build"
-            VALUE ${NOVAPHY_WHEEL_DST_PREFIX}/lib
+        set(NOVAPHY_WHL_LIB_DST ${NOVAPHY_WHEEL_DST_PREFIX}/lib CACHE PATH
+            "The install path of library for scikit-build"
         )
-        set(CACHE{NOVAPHY_WHL_BUNEDLED_DST} TYPE PATH
-            HELP "The install path of bundled third-party libraries for wheel scikit-build"
-            VALUE ${NOVAPHY_WHL_LIB_DST}/novaphy-bundled-libs
+        set(NOVAPHY_WHL_BUNEDLED_DST ${NOVAPHY_WHL_LIB_DST}/novaphy-bundled-libs CACHE PATH
+            "The install path of bundled third-party libraries for wheel scikit-build"
         )
         _novaphy_log("Wheel layout (Linux): prefix='${NOVAPHY_WHEEL_DST_PREFIX}', lib='${NOVAPHY_WHL_LIB_DST}', bundled='${NOVAPHY_WHL_BUNEDLED_DST}'")
     elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-        set(CACHE{NOVAPHY_WHEEL_DST_PREFIX} TYPE PATH
-            HELP "The install path prefix of wheel package for scikit-build"
-            VALUE novaphy
+        set(NOVAPHY_WHEEL_DST_PREFIX novaphy CACHE PATH
+            "The install path prefix of wheel package for scikit-build"
         )
-        set(CACHE{NOVAPHY_WHL_LIB_DST} TYPE PATH
-            HELP "The install path of library for scikit-build"
-            VALUE ${NOVAPHY_WHEEL_DST_PREFIX}
+        set(NOVAPHY_WHL_LIB_DST ${NOVAPHY_WHEEL_DST_PREFIX} CACHE PATH
+            "The install path of library for scikit-build"
         )
-        set(CACHE{NOVAPHY_WHL_BUNEDLED_DST} TYPE PATH
-            HELP "The install path of bundled third-party libraries for wheel scikit-build"
-            VALUE ${NOVAPHY_WHEEL_DST_PREFIX}
+        set(NOVAPHY_WHL_BUNEDLED_DST ${NOVAPHY_WHEEL_DST_PREFIX} CACHE PATH
+            "The install path of bundled third-party libraries for wheel scikit-build"
         )
         _novaphy_log("Wheel layout (Windows): prefix='${NOVAPHY_WHEEL_DST_PREFIX}', lib='${NOVAPHY_WHL_LIB_DST}', bundled='${NOVAPHY_WHL_BUNEDLED_DST}'")
     else()
@@ -104,16 +93,14 @@ endfunction()
 # Chooses layout based on the active build system.
 function(setup_novaphy_packager)
     if (SKBUILD)
-        set(CACHE{NOVAPHY_PACKAGE_TYPE} TYPE STRING
-            HELP "The type of package to build, either CMake or Wheel"
-            VALUE Wheel
+        set(NOVAPHY_PACKAGE_TYPE Wheel CACHE STRING
+            "The type of package to build, either CMake or Wheel"
         )
         _novaphy_log("Package type selected: Wheel (SKBUILD enabled)")
         setup_wheel_layout()
     else()
-        set(CACHE{NOVAPHY_PACKAGE_TYPE} TYPE STRING
-            HELP "The type of package to build, either CMake or Wheel"
-            VALUE CMake
+        set(NOVAPHY_PACKAGE_TYPE CMake CACHE STRING
+            "The type of package to build, either CMake or Wheel"
         )
         _novaphy_log("Package type selected: CMake")
         setup_cmake_package_layout()
