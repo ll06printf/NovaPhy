@@ -342,13 +342,9 @@ function(novaphy_bundle_dependencies target)
         message(FATAL_ERROR "Unexpected package type: ${NOVAPHY_PACKAGE_TYPE}")
     endif()
 
-    get_target_property(target_loc ${target} LOCATION)
-    if (NOT target_loc)
-        message(FATAL_ERROR "Failed to get location of target '${target}' for bundling dependencies'")
-    endif()
     include(CODE "
         include(\"${CMAKE_CURRENT_LIST_DIR}/install_dependence.cmake\")
-        novaphy_install_dependencies(\"${target_loc}\" \"${dst}\")
+        novaphy_install_dependencies(\"$<TARGET_FILE:${target}>\" \"${dst}\")
     ")
 endfunction()
 
