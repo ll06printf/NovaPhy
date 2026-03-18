@@ -253,7 +253,7 @@ function(novaphy_export_library target)
         if (NOT num_headers EQUAL num_headers_prefix)
             message(FATAL_ERROR "The number of headers and headers prefixes must be the same for target ${target}")
         endif()
-        foreach(header in ZIP_LISTS headers headers_prefix)
+        foreach(header header_prefix IN ZIP_LISTS headers headers_prefix)
             install(FILES ${header}
                 DESTINATION ${NOVAPHY_INCLUDE_DST}/${header_prefix}
                 COMPONENT ${exlab_COMPONENT}

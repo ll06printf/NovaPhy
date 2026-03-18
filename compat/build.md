@@ -66,15 +66,16 @@ Here are some common causes of failures with specific compilers:
 | `gcc-14, gcc-15` | `gcc>13` is not compatible with `nvcc-12` | Unfixable |
 | `clang-14` | Instantiate a member function with the constraint that is trivial and false. | TODO |
 | `clang <=18` | `libuipc` uses alias template deduction which isn't support by erlay `clang`. | Unfixable [^2] |
+| `clang 19` | `libstdc++ 12` isn't completely compatible with `clang19` | Unfixable |
 | `nvcc-13` | **muda** expects non-strict dependent name resolution. | TODO |
 
 [^1]: The issue has been fixed by upstream maintainers with a patch. However, the patch has not been included in the current baseline (2025.07.25). Adding `-include cstdint` to your `CXXFLAGS` environment variable should resolve the problem.
-[^2]: But the alias template arguments deduction is just needed by CUDA targets. If you have another compiler to be used as CUDA host compiler (e.g. gcc 11), clang14+ could compile the project as compiler of C/C++ targets.
+[^2]: But these features are just needed by CUDA targets. If you have another compiler to be used as CUDA host compiler (e.g. gcc 11), clang14+ could compile the project as compiler of C/C++ targets.
 
 > [!note] Clang with libstdc++
 > Clang uses `libstdc++` as the default standard library. Any crash caused by `libstdc++` also affects Clang.
 
-Compilers are described by name and major version, such as `gcc-9`. For each major version, only one version is tested (✅ marks compatible compilers):
+Compilers are described by name and major version, such as `gcc-9`. For each major version, only one version is tested (✅ marks compatible compilers, or combinations):
 
 - GCC 9.5.0
 - GCC 10.5.0
@@ -84,7 +85,7 @@ Compilers are described by name and major version, such as `gcc-9`. For each maj
 - GCC 14.3.0
 - GCC 15.2.1
 - Clang 18 and below.
-- ✅ Clang 19.1.7
+- ✅ Clang 19.1.7 with `libstdc++ 13`
 - ✅ nvcc-12: CUDA compilation tools, release 12.4, V12.4.131
 - nvcc-13: CUDA compilation tools, release 13.1, V13.1.115
 
