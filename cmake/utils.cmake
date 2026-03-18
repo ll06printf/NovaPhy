@@ -59,27 +59,27 @@ endfunction()
 
 function(setup_wheel_layout)
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-        set(NOVAPHY_WHEEL_DST_PREFIX novaphy CACHE PATH
+        set(NOVAPHY_WHL_DST_PREFIX novaphy CACHE PATH
             "The install path prefix of wheel package for scikit-build"
         )
-        set(NOVAPHY_WHL_LIB_DST ${NOVAPHY_WHEEL_DST_PREFIX}/lib CACHE PATH
+        set(NOVAPHY_WHL_LIB_DST ${NOVAPHY_WHL_DST_PREFIX}/lib CACHE PATH
             "The install path of library for scikit-build"
         )
         set(NOVAPHY_WHL_BUNEDLED_DST ${NOVAPHY_WHL_LIB_DST}/novaphy-bundled-libs CACHE PATH
             "The install path of bundled third-party libraries for wheel scikit-build"
         )
-        _novaphy_log("Wheel layout (Linux): prefix='${NOVAPHY_WHEEL_DST_PREFIX}', lib='${NOVAPHY_WHL_LIB_DST}', bundled='${NOVAPHY_WHL_BUNEDLED_DST}'")
+        _novaphy_log("Wheel layout (Linux): prefix='${NOVAPHY_WHL_DST_PREFIX}', lib='${NOVAPHY_WHL_LIB_DST}', bundled='${NOVAPHY_WHL_BUNEDLED_DST}'")
     elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-        set(NOVAPHY_WHEEL_DST_PREFIX novaphy CACHE PATH
+        set(NOVAPHY_WHL_DST_PREFIX novaphy CACHE PATH
             "The install path prefix of wheel package for scikit-build"
         )
-        set(NOVAPHY_WHL_LIB_DST ${NOVAPHY_WHEEL_DST_PREFIX} CACHE PATH
+        set(NOVAPHY_WHL_LIB_DST ${NOVAPHY_WHL_DST_PREFIX} CACHE PATH
             "The install path of library for scikit-build"
         )
-        set(NOVAPHY_WHL_BUNEDLED_DST ${NOVAPHY_WHEEL_DST_PREFIX} CACHE PATH
+        set(NOVAPHY_WHL_BUNEDLED_DST ${NOVAPHY_WHL_DST_PREFIX} CACHE PATH
             "The install path of bundled third-party libraries for wheel scikit-build"
         )
-        _novaphy_log("Wheel layout (Windows): prefix='${NOVAPHY_WHEEL_DST_PREFIX}', lib='${NOVAPHY_WHL_LIB_DST}', bundled='${NOVAPHY_WHL_BUNEDLED_DST}'")
+        _novaphy_log("Wheel layout (Windows): prefix='${NOVAPHY_WHL_DST_PREFIX}', lib='${NOVAPHY_WHL_LIB_DST}', bundled='${NOVAPHY_WHL_BUNEDLED_DST}'")
     else()
         message(FATAL_ERROR "Unsupported system: ${CMAKE_SYSTEM_NAME}")
     endif()
