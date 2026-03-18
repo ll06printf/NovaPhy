@@ -62,8 +62,8 @@ if (NOVAPHY_ENABLE_INSTALL)
     if (NOVAPHY_BUNDLE_UIPC)
         file(GLOB_RECURSE libuipc_library 
             ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/bin/*.dll
-            ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/lib/*.so
+            ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/bin/*.so
         )
-        novaphy_bundle_files(novaphy_core ${libuipc_library})
+        novaphy_bundle_files(${libuipc_library})
     endif()
 endif()
