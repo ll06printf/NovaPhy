@@ -59,11 +59,7 @@ if (NOVAPHY_ENABLE_INSTALL)
     )
     novaphy_export_library(novaphy_core COMPONENT core XNAME core)
 
-    if (NOVAPHY_BUNDLE_UIPC)
-        file(GLOB_RECURSE libuipc_library 
-            ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/bin/*.dll
-            ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/bin/*.so
-        )
-        novaphy_bundle_files(${libuipc_library})
+    if (SKBUILD AND NOVAPHY_BUNDLE_DEPENDENCIES)
+        novaphy_bundle_dependencies(novaphy_core)
     endif()
 endif()

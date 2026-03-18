@@ -44,4 +44,7 @@ if (NOVAPHY_ENABLE_INSTALL)
     )
     novaphy_export_library(novaphy_ipc COMPONENT ipc XNAME ipc WITHOUT_CMAKE_CONFIG)
 
+    if (SKBUILD AND NOVAPHY_BUNDLE_DEPENDENCIES)
+        novaphy_bundle_dependencies(novaphy_ipc)
+    endif()
 endif()

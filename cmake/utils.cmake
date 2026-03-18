@@ -332,6 +332,26 @@ function(novaphy_bundle_files)
     endif()
 endfunction()
 
+function(novaphy_bundle_dependencies target)
+    set(dst "")
+    if (NOVAPHY_PACKAGE_TYPE STREQUAL "CMake")
+        set(dst ${NOVAPHY_BUNDLED_DST})
+    elseif(NOVAPHY_PACKAGE_TYPE STREQUAL "Wheel")
+        set(dst ${NOVAPHY_WHL_BUNEDLED_DST})
+    else()
+        message(FATAL_ERROR "Unexpected package type: ${NOVAPHY_PACKAGE_TYPE}")
+    endif()
+
+    get_target_property(target_loc ${target} LOCATION)
+    if (NOT target_loc)
+        message(FATAL_ERROR "Failed to get location of target '${target}' for bundling dependencies'")
+    endif()
+    include(CODE "
+        include(\"${CMAKE_CURRENT_LIST_DIR}/install_dependence.cmake\")
+        novaphy_install_dependencies(\"${target_loc}\" \"${dst}\")
+    ")
+endfunction()
+
 # Generate and install CMake configuration files, only
 # for CMake package. The contents installed by the function
 # belong to the dev component, which is not needed for wheel

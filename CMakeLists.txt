@@ -3,17 +3,12 @@ cmake_minimum_required(VERSION 3.15...4.0)
 # ---------- Optional IPC support via libuipc ----------
 # Must be declared before project() so vcpkg installs the 'ipc' feature deps.
 option(NOVAPHY_WITH_IPC "Build with libuipc IPC support (requires CUDA >= 12.4)" OFF)
-option(NOVAPHY_BUNDLE_UIPC "Bundle libuipc with NovaPhy package. If disabled, novaphy will attempt to find it system-wide." ON)
+option(NOVAPHY_BUNDLE_DEPENDENCIES "Bundle dependencies with NovaPhy Wheel Package." ON)
 
 # Processing options
 
 if(NOVAPHY_WITH_IPC)
     list(APPEND VCPKG_MANIFEST_FEATURES "ipc")
-endif()
-
-if (NOVAPHY_BUNDLE_UIPC AND NOT NOVAPHY_WITH_IPC)
-    message(WARNING "NOVAPHY_BUNDLE_UIPC is enabled but NOVAPHY_WITH_IPC is disabled. Ignoring NOVAPHY_BUNDLE_UIPC.")
-    set(NOVAPHY_BUNDLE_UIPC OFF CACHE BOOL "" FORCE)
 endif()
 
 set(NOVAPHY_PROJECT_NAME "")
@@ -25,6 +20,11 @@ else()
     set(NOVAPHY_PROJECT_NAME "NovaPhy")
     # TODO There are too many version strings floating around (setup.py, CMakeLists.txt, __init__.py).
     set(NOVAPHY_PROJECT_VERSION "0.1.0")
+
+    if (NOVAPHY_BUNDLE_DEPENDENCIES)
+        message(WARNING "NOVAPHY_BUNDLE_DEPENDENCIES is enabled, but SKBUILD is not defined. This option only has an effect when building with SKBUILD (e.g. via pip install).")
+        set(NOVAPHY_BUNDLE_DEPENDENCIES OFF CACHE BOOL FORECE)
+    endif()
 endif()
 
 include(compat/compat.cmake)

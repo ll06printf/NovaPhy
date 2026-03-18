@@ -31,14 +31,6 @@ PYBIND11_MODULE(_core, m) {
             str: Semantic version string.
     )pbdoc");
 
-    m.def("libuipc_bind_type", &novaphy::libuipc_bind_type, R"pbdoc(
-        Returns how libuipc is being used by NovaPhy.
-
-        Returns:
-            str: "none" if IPC support is disabled, "bundled" if using the bundled libuipc, or "system" if
-            using a system-installed libuipc.
-    )pbdoc");
-
     bind_math(m);
     bind_core(m);
     bind_collision(m);
