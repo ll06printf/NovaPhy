@@ -1,0 +1,391 @@
+include_guard()
+# NovaPhy Buildsystem utilities
+
+# CMake package layout
+# - lib
+#   - cmake/novaphy
+#       - <CMake configuration files>
+#   - novaphy-bundled-libs
+#       - <novaphy bundled libs>
+#   - <novaphy library>
+# - include/novaphy
+#   - <public headers>
+
+# Python Wheel package layout
+# - novaphy
+#   - <_core python extension>
+#   - <python modules>
+#   - lib
+#       - <novaphy library>
+#       - novaphy-bundled-libs "just for Linux"
+#           - bundled libs
+#   - <bundled libs> "just for Windows"
+
+# On linux, the layout of Wheel package is similar to CMake 
+# package, except the python extension library. But on Windows, 
+# the runtime files of the novaphy dynamic library will be placed
+# in the same directory as the python extension library.
+
+# Enable detailed packaging logs for troubleshooting install layout issues.
+set(CACHE{NOVAPHY_PACKAGE_LOG} TYPE BOOL
+    HELP "Enable verbose logs for NovaPhy packaging utilities"
+    VALUE ON
+)
+
+function(_novaphy_log message_text)
+    if (NOVAPHY_PACKAGE_LOG)
+        message(STATUS "[novaphy-packager] ${message_text}")
+    endif()
+endfunction()
+
+############################################################
+# Helper functions
+############################################################
+
+function(setup_cmake_package_layout)
+    set(CACHE{NOVAPHY_INCLUDE_DST} TYPE PATH
+        HELP "The install path of public headers"
+        VALUE include
+    )
+    set(CACHE{NOVAPHY_LIB_DST} TYPE PATH
+        HELP "The install path of libraries"
+        VALUE lib
+    )
+    set(CACHE{NOVAPHY_BUNDLED_DST} TYPE PATH 
+        HELP "The install path of bundled libraries"
+        VALUE ${NOVAPHY_LIB_DST}/novaphy-bundled-libs
+    )
+    set(CACHE{NOVAPHY_CMAKE_CONFIG_DST} TYPE PATH 
+        HELP "The install path of CMake config files"
+        VALUE ${NOVAPHY_LIB_DST}/cmake
+    )
+    _novaphy_log("CMake layout: include='${NOVAPHY_INCLUDE_DST}', lib='${NOVAPHY_LIB_DST}', bundled='${NOVAPHY_BUNDLED_DST}', config='${NOVAPHY_CMAKE_CONFIG_DST}'")
+endfunction()
+
+function(setup_wheel_layout)
+    if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        set(CACHE{NOVAPHY_WHEEL_DST_PREFIX} TYPE PATH
+            HELP "The install path prefix of wheel package for scikit-build"
+            VALUE novaphy
+        )
+        set(CACHE{NOVAPHY_WHL_LIB_DST} TYPE PATH
+            HELP "The install path of library for scikit-build"
+            VALUE ${NOVAPHY_WHEEL_DST_PREFIX}/lib
+        )
+        set(CACHE{NOVAPHY_WHL_BUNEDLED_DST} TYPE PATH
+            HELP "The install path of bundled third-party libraries for wheel scikit-build"
+            VALUE ${NOVAPHY_WHL_LIB_DST}/novaphy-bundled-libs
+        )
+        _novaphy_log("Wheel layout (Linux): prefix='${NOVAPHY_WHEEL_DST_PREFIX}', lib='${NOVAPHY_WHL_LIB_DST}', bundled='${NOVAPHY_WHL_BUNEDLED_DST}'")
+    elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+        set(CACHE{NOVAPHY_WHEEL_DST_PREFIX} TYPE PATH
+            HELP "The install path prefix of wheel package for scikit-build"
+            VALUE novaphy
+        )
+        set(CACHE{NOVAPHY_WHL_LIB_DST} TYPE PATH
+            HELP "The install path of library for scikit-build"
+            VALUE ${NOVAPHY_WHEEL_DST_PREFIX}
+        )
+        set(CACHE{NOVAPHY_WHL_BUNEDLED_DST} TYPE PATH
+            HELP "The install path of bundled third-party libraries for wheel scikit-build"
+            VALUE ${NOVAPHY_WHEEL_DST_PREFIX}
+        )
+        _novaphy_log("Wheel layout (Windows): prefix='${NOVAPHY_WHEEL_DST_PREFIX}', lib='${NOVAPHY_WHL_LIB_DST}', bundled='${NOVAPHY_WHL_BUNEDLED_DST}'")
+    else()
+        message(FATAL_ERROR "Unsupported system: ${CMAKE_SYSTEM_NAME}")
+    endif()
+endfunction()
+
+########################################################
+# Package and install configuration
+########################################################
+
+# Main entry point for package layout setup.
+# Chooses layout based on the active build system.
+function(setup_novaphy_packager)
+    if (SKBUILD)
+        set(CACHE{NOVAPHY_PACKAGE_TYPE} TYPE STRING
+            HELP "The type of package to build, either CMake or Wheel"
+            VALUE Wheel
+        )
+        _novaphy_log("Package type selected: Wheel (SKBUILD enabled)")
+        setup_wheel_layout()
+    else()
+        set(CACHE{NOVAPHY_PACKAGE_TYPE} TYPE STRING
+            HELP "The type of package to build, either CMake or Wheel"
+            VALUE CMake
+        )
+        _novaphy_log("Package type selected: CMake")
+        setup_cmake_package_layout()
+    endif()
+    define_property(GLOBAL PROPERTY NOVAPHY_PACKAGE_COMPONENTS
+        BRIEF_DOCS "The list of components of novaphy package"
+        FULL_DOCS "The list of components of novaphy package, used for CMake export and Wheel package."
+    )
+    define_property(GLOBAL PROPERTY NOVAPHY_PACKAGE_DEPENDENCIES
+        BRIEF_DOCS "The list of dependencies of novaphy package"
+        FULL_DOCS "The list of dependencies of novaphy package, used for CMake export and Wheel package."
+    )
+
+    # The following properties simulate FILE_SET HEADERS from CMake 3.23,
+    # which is not supported by the minimum required CMake version of this project (3.18). 
+    # Public headers are needed for both CMake and Wheel packages:
+    # CMake export and wheel include-file generation.
+    define_property(TARGET PROPERTY NOVAPHY_PUBLIC_HEADERS
+        BRIEF_DOCS "The list of public headers of the target"
+        FULL_DOCS "The list of public headers of the target, used for CMake export and Wheel package."
+    )
+    define_property(TARGET PROPERTY NOVAPHY_HEADERS_PREFIX
+        BRIEF_DOCS "The base directory of public headers of the target"
+        FULL_DOCS "The base directory of public headers of the target, used for CMake export and Wheel package."
+    )
+endfunction()
+
+function(novaphy_header_set target)
+    cmake_parse_arguments(hset 
+        "" 
+        "BASE_DIR" 
+        "FILES;PATTERNS" 
+        ${ARGN}
+    )
+    if (NOT hset_FILES AND NOT hset_PATTERNS)
+        message(FATAL_ERROR "Either FILES or PATTERNS must be specified for novaphy_header_set")
+    endif()
+
+    set(headers)
+    if (hset_FILES)
+        set(headers ${hset_FILES})
+    endif()
+    if (hset_PATTERNS)
+        foreach(pattern IN LISTS hset_PATTERNS)
+            file(GLOB_RECURSE pattern_headers CONFIGURE_DEPENDS ${pattern})
+            list(APPEND headers ${pattern_headers})
+        endforeach()
+    endif()
+
+    list(REMOVE_DUPLICATES headers)
+    set(include_prefix "")
+    foreach (header IN LISTS headers)
+        set(header_prefix ".")
+        if (hset_BASE_DIR)
+            file(RELATIVE_PATH header_prefix ${hset_BASE_DIR} ${header})
+            if (header_prefix MATCHES "^[.][.]")
+                message(FATAL_ERROR "Header ${header} is not under the base directory ${hset_BASE_DIR}")
+            endif()
+            get_filename_component(header_prefix ${header_prefix} DIRECTORY)
+        endif()
+        list(APPEND include_prefix ${header_prefix})
+    endforeach()
+    set_property(TARGET ${target} APPEND PROPERTY
+        NOVAPHY_PUBLIC_HEADERS "${headers}"
+    )
+    set_property(TARGET ${target} APPEND PROPERTY
+        NOVAPHY_HEADERS_PREFIX "${include_prefix}"
+    )
+    list(LENGTH headers header_count)
+    _novaphy_log("Registered ${header_count} public header(s) for target '${target}'")
+endfunction()
+
+function(_novaphy_add_component component)
+    get_property(components GLOBAL PROPERTY NOVAPHY_PACKAGE_COMPONENTS)
+    list(APPEND components ${component})
+    list(REMOVE_DUPLICATES components)
+    set_property(GLOBAL PROPERTY NOVAPHY_PACKAGE_COMPONENTS ${components})
+    _novaphy_log("Added package component '${component}'")
+endfunction()
+
+function(_novaphy_add_dependency dependency)
+    get_property(dependencies GLOBAL PROPERTY NOVAPHY_PACKAGE_DEPENDENCIES)
+    list(APPEND dependencies ${dependency})
+    list(REMOVE_DUPLICATES dependencies)
+    set_property(GLOBAL PROPERTY NOVAPHY_PACKAGE_DEPENDENCIES ${dependencies})
+    _novaphy_log("Recorded package dependency '${dependency}'")
+endfunction()
+
+# Install the python extension module, enabled if the target 
+# is built as a python extension module. 
+function(novaphy_export_pybind target)
+    if(NOVAPHY_PACKAGE_TYPE STREQUAL "Wheel")
+        _novaphy_add_component(pybind)
+        _novaphy_log("Installing python extension target '${target}' to '${NOVAPHY_WHL_DST_PREFIX}'")
+        install(TARGETS ${target}
+            RUNTIME DESTINATION ${NOVAPHY_WHL_DST_PREFIX}
+            LIBRARY DESTINATION ${NOVAPHY_WHL_DST_PREFIX}
+            ARCHIVE DESTINATION ${NOVAPHY_WHL_DST_PREFIX}
+            COMPONENT pybind
+        )
+
+        # DLL Search
+        if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+            set_target_properties(${target} PROPERTIES
+                # TODO The Build RPATH is handcoded to the output directory of libuipc
+                BUILD_RPATH "${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/bin"
+                INSTALL_RPATH "$ORIGIN/lib:$ORIGIN/lib/novaphy-bundled-libs"
+            )
+            _novaphy_log("Configured Linux RPATH for python extension target '${target}'")
+        endif()
+    endif()
+
+endfunction()
+
+# Install the library target; implementation differs for
+# different for CMake and Wheel package.
+function(novaphy_export_library target)
+    cmake_parse_arguments(exlab
+        "WITHOUT_CMAKE_CONFIG"
+        "XNAME;COMPONENT"
+        "DEPENDS"
+        ${ARGN}
+    )
+
+    # Installation config
+    if (NOVAPHY_PACKAGE_TYPE STREQUAL "CMake")
+        if (exlab_XNAME) 
+            set_target_properties(${target} PROPERTIES
+                EXPORT_NAME ${exlab_XNAME}
+            )
+            add_library(novaphy::${exlab_XNAME} ALIAS ${target})
+        endif()
+
+        _novaphy_log("Exporting target '${target}' to CMake package, component='${exlab_COMPONENT}'")
+
+        # Install binary
+        install(TARGETS ${target}
+            RUNTIME DESTINATION ${NOVAPHY_LIB_DST}
+            LIBRARY DESTINATION ${NOVAPHY_LIB_DST}
+            ARCHIVE DESTINATION ${NOVAPHY_LIB_DST}
+            COMPONENT ${exlab_COMPONENT}
+        )
+        _novaphy_log("Installed CMake library target '${target}' to '${NOVAPHY_LIB_DST}'")
+
+        # Install headers
+        get_target_property(headers ${target} NOVAPHY_PUBLIC_HEADERS)
+        get_target_property(headers_prefix ${target} NOVAPHY_HEADERS_PREFIX)
+        list(LENGTH headers num_headers)
+        list(LENGTH headers_prefix num_headers_prefix)
+        if (NOT num_headers EQUAL num_headers_prefix)
+            message(FATAL_ERROR "The number of headers and headers prefixes must be the same for target ${target}")
+        endif()
+        foreach(header in ZIP_LISTS headers headers_prefix)
+            install(FILES ${header}
+                DESTINATION ${NOVAPHY_INCLUDE_DST}/${header_prefix}
+                COMPONENT ${exlab_COMPONENT}
+            )
+        endforeach()
+        _novaphy_log("Installed public headers for target '${target}' to '${NOVAPHY_INCLUDE_DST}'")
+
+        # Install configure
+        if (NOT exlab_WITHOUT_CMAKE_CONFIG)
+            _novaphy_add_component(${exlab_COMPONENT})
+            install(TARGETS ${target}
+                EXPORT novaphy-${exlab_COMPONENT}-targets
+                COMPONENT ${exlab_COMPONENT}
+            )
+            _novaphy_log("Enabled CMake export for target '${target}', component='${exlab_COMPONENT}'")
+        endif()
+
+        if (exlab_DEPENDENCIES)
+            foreach(dependency IN LISTS exlab_DEPENDENCIES)
+                _novaphy_add_dependency(${dependency})
+            endforeach()
+        endif()
+    elseif(NOVAPHY_PACKAGE_TYPE STREQUAL "Wheel")
+        install(TARGETS ${target}
+            RUNTIME DESTINATION ${NOVAPHY_WHL_LIB_DST}
+            LIBRARY DESTINATION ${NOVAPHY_WHL_LIB_DST}
+            ARCHIVE DESTINATION ${NOVAPHY_WHL_LIB_DST}
+            COMPONENT ${exlab_COMPONENT}
+        )
+        _novaphy_log("Installed Wheel library target '${target}' to '${NOVAPHY_WHL_LIB_DST}'")
+    else()
+        message(FATAL_ERROR "Unexpected package type: ${NOVAPHY_PACKAGE_TYPE}")
+    endif()
+
+endfunction()
+
+# Bundled third-party library; implementation differs by package type.
+# be different for CMake and Wheel package.
+function(novaphy_bundled_library target)
+    if (NOVAPHY_PACKAGE_TYPE STREQUAL "CMake")
+        install(TARGETS ${target}
+            RUNTIME DESTINATION ${NOVAPHY_BUNDLED_DST}
+            LIBRARY DESTINATION ${NOVAPHY_BUNDLED_DST}
+            ARCHIVE DESTINATION ${NOVAPHY_BUNDLED_DST}
+            COMPONENT bundled
+        )
+        _novaphy_log("Installed bundled target '${target}' to '${NOVAPHY_BUNDLED_DST}' (CMake package)")
+    elseif(NOVAPHY_PACKAGE_TYPE STREQUAL "Wheel")
+        install(TARGETS ${target}
+            RUNTIME DESTINATION ${NOVAPHY_WHL_BUNEDLED_DST}
+            LIBRARY DESTINATION ${NOVAPHY_WHL_BUNEDLED_DST}
+            ARCHIVE DESTINATION ${NOVAPHY_WHL_BUNEDLED_DST}
+            COMPONENT bundled
+        )
+        _novaphy_log("Installed bundled target '${target}' to '${NOVAPHY_WHL_BUNEDLED_DST}' (Wheel package)")
+    else()
+        message(FATAL_ERROR "Unexpected package type: ${NOVAPHY_PACKAGE_TYPE}")
+    endif()
+endfunction()
+
+function(novaphy_bundled_files)
+    if (NOVAPHY_PACKAGE_TYPE STREQUAL "CMake")
+        install(FILES ${ARGN}
+            DESTINATION ${NOVAPHY_BUNDLED_DST}
+            COMPONENT bundled
+        )
+        _novaphy_log("Installed bundled files to '${NOVAPHY_BUNDLED_DST}' (CMake package)")
+    elseif(NOVAPHY_PACKAGE_TYPE STREQUAL "Wheel")
+        install(FILES ${ARGN}
+            DESTINATION ${NOVAPHY_WHL_BUNEDLED_DST}
+            COMPONENT bundled
+        )
+        _novaphy_log("Installed bundled files to '${NOVAPHY_WHL_BUNEDLED_DST}' (Wheel package)")
+    else()
+        message(FATAL_ERROR "Unexpected package type: ${NOVAPHY_PACKAGE_TYPE}")
+    endif()
+endfunction()
+
+# Generate and install CMake configuration files, only
+# for CMake package. The contents installed by the function
+# belong to the dev component, which is not needed for wheel
+# package.
+function(novaphy_post_install)
+    if (NOVAPHY_PACKAGE_TYPE STREQUAL "CMake")
+        include(CMakePackageConfigHelpers)
+        # Create targets file for each component
+        get_property(components GLOBAL PROPERTY NOVAPHY_PACKAGE_COMPONENTS)
+        foreach(component IN LISTS components)
+            install(EXPORT novaphy-${component}-targets
+                FILE novaphy-${component}-targets.cmake
+                NAMESPACE novaphy::
+                DESTINATION ${NOVAPHY_CMAKE_CONFIG_DST}
+                COMPONENT dev
+            )
+        endforeach()
+        _novaphy_log("Installed export target files for components: ${components}")
+
+        write_basic_package_version_file(
+            "${CMAKE_CURRENT_BINARY_DIR}/novaphyConfigVersion.cmake"
+            VERSION ${PROJECT_VERSION}
+            COMPATIBILITY AnyNewerVersion
+        )
+
+        # Create configure file
+        get_property(dependencies GLOBAL PROPERTY NOVAPHY_PACKAGE_DEPENDENCIES)
+        
+        configure_package_config_file(
+            "cmake/novaphyConfig.cmake.in"
+            "${CMAKE_CURRENT_BINARY_DIR}/novaphyConfig.cmake"
+            INSTALL_DESTINATION lib/cmake/novaphy
+        )
+        install(FILES
+            "${CMAKE_CURRENT_BINARY_DIR}/novaphyConfig.cmake"
+            "${CMAKE_CURRENT_BINARY_DIR}/novaphyConfigVersion.cmake"
+            DESTINATION ${NOVAPHY_CMAKE_CONFIG_DST}
+            COMPONENT dev
+        )
+        _novaphy_log("Installed CMake config files to '${NOVAPHY_CMAKE_CONFIG_DST}'")
+    endif()
+endfunction()
+
+setup_novaphy_packager()

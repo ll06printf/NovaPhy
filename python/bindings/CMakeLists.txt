@@ -27,25 +27,8 @@ if(NOVAPHY_WITH_IPC)
         COMPILE_FLAGS "$<$<CXX_COMPILER_ID:MSVC>:/std:c++20>$<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-std=c++20>"
     )
 
-    set_target_properties(_core PROPERTIES
-        BUILD_RPATH "${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/bin/"
-    )
-
-    if (NOVAPHY_BUNDLE_UIPC)
-        set_target_properties(_core PROPERTIES
-            INSTALL_RPATH "$ORIGIN/lib/novaphy-bundled-libs/"
-        )
-    endif()
 endif()
 
 if (NOVAPHY_ENABLE_INSTALL)
-    if (SKBUILD)
-        # With scikit-build, the Python extension module is built in-place and should not be installed by CMake.
-        install(TARGETS _core 
-            COMPONENT pybind
-            DESTINATION novaphy
-        )
-    else()
-        # TODO Without scikit-build, we need to generate a simple setup.py and related files.
-    endif()
+    novaphy_export_pybind(_core)
 endif()

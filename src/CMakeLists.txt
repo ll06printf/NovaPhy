@@ -27,8 +27,6 @@ add_library(novaphy_core STATIC
     fluid/boundary.cpp
 )
 
-add_library(novaphy::core ALIAS novaphy_core)
-
 target_include_directories(novaphy_core PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
     $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
@@ -42,51 +40,21 @@ target_compile_definitions(novaphy_core PUBLIC
     EIGEN_DEFAULT_DENSE_INDEX_TYPE=int
 )
 
-if (NOVAPHY_ENABLE_INSTALL)
-    if (NOT SKBUILD)
-        # For CMake Standalone Build --- install the library and headers.
-        # `novaphy_core` is a static library that would be linked into the Python extension module.
-        # It's meaningless to package it into Python wheels.
-
-        target_include_directories(novaphy_core PUBLIC
-            $<INSTALL_INTERFACE:include>
-        )
-
-        set_target_properties(novaphy_core PROPERTIES
-            EXPORT_NAME core
-        )
-
-        install(TARGETS novaphy_core
-            COMPONENT core
-            EXPORT novaphyTargets
-            ARCHIVE DESTINATION lib
-            LIBRARY DESTINATION lib
-            RUNTIME DESTINATION bin
-        )
-
-        install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/novaphy/
-            COMPONENT core
-            DESTINATION include/novaphy
-            FILES_MATCHING PATTERN "*.h"
-            PATTERN "ipc/*.h" EXCLUDE
-        )
-
-    endif()
-
-    if (NOVAPHY_BUNDLE_UIPC)
-        # If we're building a bundled libuipc, we need to export its targets as well.
-        # TODO Some configuration is needed to avoid conflicts when libuipc is also installed separately on the system.
-
-        if (SKBUILD)
-            set(uipc_bundle_dest novaphy/lib/novaphy-bundled-libs)
-        else()
-            set(uipc_bundle_dest lib/novaphy-bundled-libs)
-        endif()
-
-        install(DIRECTORY "${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/bin/"
-            COMPONENT core
-            DESTINATION ${uipc_bundle_dest}
-            FILES_MATCHING PATTERN "*"
-        )
-    endif()
-endif()
+novaphy_header_set(novaphy_core
+    BASE_DIR ${PROJECT_SOURCE_DIR}/include
+    PATTERNS
+        ${PROJECT_SOURCE_DIR}/include/novaphy/collision/*.h
+        ${PROJECT_SOURCE_DIR}/include/novaphy/core/*.h
+        ${PROJECT_SOURCE_DIR}/include/novaphy/dynamics/*.h
+        ${PROJECT_SOURCE_DIR}/include/novaphy/fluid/*.h
+        ${PROJECT_SOURCE_DIR}/include/novaphy/math/*.h
+        ${PROJECT_SOURCE_DIR}/include/novaphy/sim/*.h
+    FILES 
+        ${PROJECT_SOURCE_DIR}/include/novaphy/novaphy.h
+)
+novaphy_header_set(novaphy_core
+    BASE_DIR ${PROJECT_BINARY_DIR}/include
+    FILES ${PROJECT_BINARY_DIR}/include/novaphy/novaphy_config.h
+)
+novaphy_export_library(novaphy_core COMPONENT core XNAME core)
+# TODO Bundled UIPC

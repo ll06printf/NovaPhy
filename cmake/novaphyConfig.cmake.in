@@ -1,0 +1,39 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+# 1. 处理全局依赖 (如果是所有组件共有的)
+set(_novaphy_deps "@dependencies@")
+foreach(_dep IN LISTS _novaphy_deps)
+    find_dependency(${_dep})
+endforeach()
+
+# 2. 定义支持的组件列表
+set(_novaphy_supported_components "@components@")
+
+# 3. 如果用户没有指定组件，默认加载所有组件 (或者根据你的需求修改)
+if(NOT novaphy_FIND_COMPONENTS)
+    set(novaphy_FIND_COMPONENTS ${_novaphy_supported_components})
+endif()
+
+# 4. 循环加载请求的组件
+foreach(_comp IN LISTS novaphy_FIND_COMPONENTS)
+    if(NOT _comp IN_LIST _novaphy_supported_components)
+        set(novaphy_FOUND FALSE)
+        set(novaphy_NOT_FOUND_MESSAGE "novaphy does not have component: ${_comp}")
+        break()
+    endif()
+
+    # 构造目标文件路径：指向安装目录下的 targets 文件
+    set(_targets_file "${CMAKE_CURRENT_LIST_DIR}/novaphy-${_comp}-targets.cmake")
+    
+    if(EXISTS "${_targets_file}")
+        include("${_targets_file}")
+    else()
+        set(novaphy_FOUND FALSE)
+        set(novaphy_NOT_FOUND_MESSAGE "novaphy component ${_comp} is missing targets file!")
+        break()
+    endif()
+endforeach()
+
+check_required_components(novaphy)

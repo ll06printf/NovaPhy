@@ -35,6 +35,8 @@ project(
     LANGUAGES CXX
 )
 
+include(cmake/utils.cmake)
+
 set(NOVAPHY_ENABLE_INSTALL ON 
     "Control whether to enable install targets for NovaPhy. \
     Should be OFF when building as subproject."
@@ -124,31 +126,4 @@ if(NOT DEFINED SKBUILD)
 endif()
 
 # Install CMake config files
-if (NOVAPHY_ENABLE_INSTALL AND NOT SKBUILD)
-    install(EXPORT novaphyTargets
-        FILE novaphyTargets.cmake
-        NAMESPACE novaphy::
-        DESTINATION lib/cmake/novaphy
-    )
-
-    include(CMakePackageConfigHelpers)
-    write_basic_package_version_file(
-        "${CMAKE_CURRENT_BINARY_DIR}/novaphyConfigVersion.cmake"
-        VERSION ${PROJECT_VERSION}
-        COMPATIBILITY AnyNewerVersion
-    )
-
-    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/novaphyConfig.cmake" 
-    [====[
-        include(CMakeFindDependencyMacro)
-        find_dependency(Eigen3 CONFIG REQUIRED)
-        include("${CMAKE_CURRENT_LIST_DIR}/novaphyTargets.cmake")
-    ]====])
-
-    install(FILES
-        "${CMAKE_CURRENT_BINARY_DIR}/novaphyConfigVersion.cmake"
-        "${CMAKE_CURRENT_BINARY_DIR}/novaphyConfig.cmake"
-        DESTINATION lib/cmake/novaphy
-        COMPONENT core
-    )
-endif()
+novaphy_post_install()
