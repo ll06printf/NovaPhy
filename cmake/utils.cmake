@@ -342,7 +342,7 @@ function(novaphy_bundle_dependencies target)
         message(FATAL_ERROR "Unexpected package type: ${NOVAPHY_PACKAGE_TYPE}")
     endif()
 
-    include(CODE "
+    install(CODE "
         include(\"${CMAKE_CURRENT_LIST_DIR}/install_dependence.cmake\")
         novaphy_install_dependencies(\"$<TARGET_FILE:${target}>\" \"${dst}\")
     ")
