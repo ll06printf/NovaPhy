@@ -126,4 +126,6 @@ if(NOT DEFINED SKBUILD)
 endif()
 
 # Install CMake config files
-novaphy_post_install()
+if (NOVAPHY_ENABLE_INSTALL)
+    novaphy_post_install()
+endif()

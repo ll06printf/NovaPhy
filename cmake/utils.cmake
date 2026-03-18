@@ -292,7 +292,7 @@ endfunction()
 
 # Bundled third-party library; implementation differs by package type.
 # be different for CMake and Wheel package.
-function(novaphy_bundled_library target)
+function(novaphy_bundle_library target)
     if (NOVAPHY_PACKAGE_TYPE STREQUAL "CMake")
         install(TARGETS ${target}
             RUNTIME DESTINATION ${NOVAPHY_BUNDLED_DST}
@@ -314,7 +314,7 @@ function(novaphy_bundled_library target)
     endif()
 endfunction()
 
-function(novaphy_bundled_files)
+function(novaphy_bundle_files)
     if (NOVAPHY_PACKAGE_TYPE STREQUAL "CMake")
         install(FILES ${ARGN}
             DESTINATION ${NOVAPHY_BUNDLED_DST}

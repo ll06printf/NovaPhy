@@ -44,5 +44,4 @@ if (NOVAPHY_ENABLE_INSTALL)
     )
     novaphy_export_library(novaphy_ipc COMPONENT ipc XNAME ipc WITHOUT_CMAKE_CONFIG)
 
-
 endif()

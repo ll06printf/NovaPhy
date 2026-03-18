@@ -40,21 +40,30 @@ target_compile_definitions(novaphy_core PUBLIC
     EIGEN_DEFAULT_DENSE_INDEX_TYPE=int
 )
 
-novaphy_header_set(novaphy_core
-    BASE_DIR ${PROJECT_SOURCE_DIR}/include
-    PATTERNS
-        ${PROJECT_SOURCE_DIR}/include/novaphy/collision/*.h
-        ${PROJECT_SOURCE_DIR}/include/novaphy/core/*.h
-        ${PROJECT_SOURCE_DIR}/include/novaphy/dynamics/*.h
-        ${PROJECT_SOURCE_DIR}/include/novaphy/fluid/*.h
-        ${PROJECT_SOURCE_DIR}/include/novaphy/math/*.h
-        ${PROJECT_SOURCE_DIR}/include/novaphy/sim/*.h
-    FILES 
-        ${PROJECT_SOURCE_DIR}/include/novaphy/novaphy.h
-)
-novaphy_header_set(novaphy_core
-    BASE_DIR ${PROJECT_BINARY_DIR}/include
-    FILES ${PROJECT_BINARY_DIR}/include/novaphy/novaphy_config.h
-)
-novaphy_export_library(novaphy_core COMPONENT core XNAME core)
-# TODO Bundled UIPC
+if (NOVAPHY_ENABLE_INSTALL)
+    novaphy_header_set(novaphy_core
+        BASE_DIR ${PROJECT_SOURCE_DIR}/include
+        PATTERNS
+            ${PROJECT_SOURCE_DIR}/include/novaphy/collision/*.h
+            ${PROJECT_SOURCE_DIR}/include/novaphy/core/*.h
+            ${PROJECT_SOURCE_DIR}/include/novaphy/dynamics/*.h
+            ${PROJECT_SOURCE_DIR}/include/novaphy/fluid/*.h
+            ${PROJECT_SOURCE_DIR}/include/novaphy/math/*.h
+            ${PROJECT_SOURCE_DIR}/include/novaphy/sim/*.h
+        FILES 
+            ${PROJECT_SOURCE_DIR}/include/novaphy/novaphy.h
+    )
+    novaphy_header_set(novaphy_core
+        BASE_DIR ${PROJECT_BINARY_DIR}/include
+        FILES ${PROJECT_BINARY_DIR}/include/novaphy/novaphy_config.h
+    )
+    novaphy_export_library(novaphy_core COMPONENT core XNAME core)
+
+    if (NOVAPHY_BUNDLE_UIPC)
+        file(GLOB_RECURSE libuipc_library 
+            ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/bin/*.dll
+            ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/lib/*.so
+        )
+        novaphy_bundle_files(novaphy_core ${libuipc_library})
+    endif()
+endif()
