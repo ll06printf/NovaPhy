@@ -349,11 +349,17 @@ function(novaphy_bundle_dependencies target)
     else()
         message(FATAL_ERROR "Unexpected package type: ${NOVAPHY_PACKAGE_TYPE}")
     endif()
-    set(dst ${CMAKE_INSTALL_PREFIX}/${dst})
 
     install(CODE "
+        # Compute the final destination at install time so that CMAKE_INSTALL_PREFIX
+        # honors any --prefix override passed to 'cmake --install'.
+        set(_novaphy_dst \"${dst}\")
+        if (NOT IS_ABSOLUTE \"\${_novaphy_dst}\")
+            set(_novaphy_dst \"\${CMAKE_INSTALL_PREFIX}/\${_novaphy_dst}\")
+        endif()
+
         include(\"${PROJECT_SOURCE_DIR}/cmake/install_dependence.cmake\")
-        novaphy_install_dependencies(${target_type} \"$<TARGET_FILE:${target}>\" \"${dst}\")
+        novaphy_install_dependencies(${target_type} \"$<TARGET_FILE:${target}>\" \"\${_novaphy_dst}\")
     ")
 endfunction()
 
