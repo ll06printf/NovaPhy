@@ -1,4 +1,6 @@
 include_guard()
+include(${PROJECT_SOURCE_DIR}/cmake/find_target_dlls.cmake)
+
 # NovaPhy Buildsystem utilities
 
 # CMake package layout
@@ -341,6 +343,8 @@ function(novaphy_bundle_dependencies target)
         message(FATAL_ERROR "Target '${target}' must be an executable or shared/module library to bundle dependencies")
     endif()
 
+    find_target_dlls(TARGET ${target} OUT_VAR dlls FILTER_IMPORTED)
+
     set(dst "")
     if (NOVAPHY_PACKAGE_TYPE STREQUAL "CMake")
         set(dst ${NOVAPHY_BUNDLED_DST})
@@ -350,17 +354,10 @@ function(novaphy_bundle_dependencies target)
         message(FATAL_ERROR "Unexpected package type: ${NOVAPHY_PACKAGE_TYPE}")
     endif()
 
-    install(CODE "
-        # Compute the final destination at install time so that CMAKE_INSTALL_PREFIX
-        # honors any --prefix override passed to 'cmake --install'.
-        set(_novaphy_dst \"${dst}\")
-        if (NOT IS_ABSOLUTE \"\${_novaphy_dst}\")
-            set(_novaphy_dst \"\${CMAKE_INSTALL_PREFIX}/\${_novaphy_dst}\")
-        endif()
-
-        include(\"${PROJECT_SOURCE_DIR}/cmake/install_dependence.cmake\")
-        novaphy_install_dependencies(${target_type} \"$<TARGET_FILE:${target}>\" \"\${_novaphy_dst}\")
-    ")
+    install(FILES ${dlls}
+        DESTINATION ${dst}
+        COMPONENT bundled
+    )
 endfunction()
 
 # Generate and install CMake configuration files, only
