@@ -352,7 +352,7 @@ function(novaphy_bundle_dependencies target)
 
     install(CODE "
         include(\"${PROJECT_SOURCE_DIR}/cmake/install_dependence.cmake\")
-        novaphy_install_dependencies(\"$<TARGET_FILE:${target}>\" \"${dst}\")
+        novaphy_install_dependencies(${target_type} \"$<TARGET_FILE:${target}>\" \"${dst}\")
     ")
 endfunction()
 
