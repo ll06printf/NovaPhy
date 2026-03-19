@@ -5,8 +5,8 @@
 # of a target by recursively inspecting its link dependencies and
 # checking their properties.
 
-# It's used as a instead of CMake's built-in generator expression 
-# $<TARGET_RUNTIME_DLLS> which requries CMake 3.27.
+# It's used instead of CMake's built-in generator expression 
+# $<TARGET_RUNTIME_DLLS> which requires CMake 3.27.
 
 set(NOVAPHY_FIND_DLLS_DEBUG OFF CACHE BOOL
     "Enable debug logs for find_target_dlls"
