@@ -31,4 +31,8 @@ endif()
 
 if (NOVAPHY_ENABLE_INSTALL)
     novaphy_export_pybind(_core)
+
+    if (SKBUILD AND NOVAPHY_BUNDLE_DEPENDENCIES)
+        novaphy_bundle_dependencies(_core)
+    endif()
 endif()

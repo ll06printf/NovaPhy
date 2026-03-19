@@ -333,6 +333,14 @@ function(novaphy_bundle_files)
 endfunction()
 
 function(novaphy_bundle_dependencies target)
+    get_target_property(target_type ${target} TYPE)
+    if (NOT target_type STREQUAL "EXECUTABLE" 
+        AND NOT target_type STREQUAL "SHARED_LIBRARY" 
+        AND NOT target_type STREQUAL "MODULE_LIBRARY"
+        )
+        message(FATAL_ERROR "Target '${target}' must be an executable or shared/module library to bundle dependencies")
+    endif()
+
     set(dst "")
     if (NOVAPHY_PACKAGE_TYPE STREQUAL "CMake")
         set(dst ${NOVAPHY_BUNDLED_DST})

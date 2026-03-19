@@ -59,7 +59,4 @@ if (NOVAPHY_ENABLE_INSTALL)
     )
     novaphy_export_library(novaphy_core COMPONENT core XNAME core)
 
-    if (SKBUILD AND NOVAPHY_BUNDLE_DEPENDENCIES)
-        novaphy_bundle_dependencies(novaphy_core)
-    endif()
 endif()
