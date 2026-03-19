@@ -63,7 +63,7 @@ function(setup_cmake_package_layout)
     set(NOVAPHY_BUNDLED_DST ${NOVAPHY_LIB_DST}/novaphy-bundled-libs CACHE PATH 
         "The install path of bundled libraries"
     )
-    set(NOVAPHY_CMAKE_CONFIG_DST ${NOVAPHY_LIB_DST}/cmake CACHE PATH 
+    set(NOVAPHY_CMAKE_CONFIG_DST ${NOVAPHY_LIB_DST}/cmake/novaphy CACHE PATH 
         "The install path of CMake config files"
     )
     _novaphy_log("CMake layout: include='${NOVAPHY_INCLUDE_DST}', lib='${NOVAPHY_LIB_DST}', bundled='${NOVAPHY_BUNDLED_DST}', config='${NOVAPHY_CMAKE_CONFIG_DST}'")
@@ -138,7 +138,9 @@ function(setup_novaphy_packager)
     set(NOVAPHY_CONFIG_TYPE "$<CONFIG>" PARENT_SCOPE)
     if(NOT WIN32)
         if("${CMAKE_BUILD_TYPE}" STREQUAL "")
-            set(NOVAPHY_CONFIG_TYPE "Release")
+            set(NOVAPHY_CONFIG_TYPE "Release" PARENT_SCOPE)
+        else()
+            set(NOVAPHY_CONFIG_TYPE "${CMAKE_BUILD_TYPE}" PARENT_SCOPE)
         endif()
     endif()
 
@@ -417,10 +419,12 @@ function(novaphy_bundle_files)
     endif()
 
     list(REMOVE_DUPLICATES bfiles_FILES)
-    install(FILES ${bfiles_FILES}
-        DESTINATION ${dst}
-        COMPONENT bundled
-    )
+    if (bfiles_FILES)
+        install(FILES ${bfiles_FILES}
+            DESTINATION ${dst}
+            COMPONENT bundled
+        )
+    endif()
 
     if (bfiles_GLOB)
         install(CODE "
@@ -501,7 +505,7 @@ function(novaphy_post_install)
         configure_package_config_file(
             "cmake/novaphyConfig.cmake.in"
             "${CMAKE_CURRENT_BINARY_DIR}/novaphyConfig.cmake"
-            INSTALL_DESTINATION lib/cmake/novaphy
+            INSTALL_DESTINATION ${NOVAPHY_CMAKE_CONFIG_DST}
         )
         install(FILES
             "${CMAKE_CURRENT_BINARY_DIR}/novaphyConfig.cmake"

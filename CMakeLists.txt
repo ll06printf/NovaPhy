@@ -37,13 +37,13 @@ project(
 
 include(cmake/utils.cmake)
 
-set(NOVAPHY_ENABLE_INSTALL ON 
+option(NOVAPHY_ENABLE_INSTALL
     "Control whether to enable install targets for NovaPhy. \
     Should be OFF when building as subproject."
+    ON
 )
 if (NOT (CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME))
     set(NOVAPHY_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
-    # TODO NovaPhy doesn't have any C++ tests for now.
 endif()
 
 

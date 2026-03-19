@@ -1,6 +1,6 @@
 # The sample C++ Project use NovaPhy by find_package
 
-cmake_minimum_required(VERSION 3.15..4)
+cmake_minimum_required(VERSION 3.15...4.0)
 
 project(NovaPhyFindPackageTest LANGUAGES CXX)
 

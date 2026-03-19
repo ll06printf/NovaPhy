@@ -103,7 +103,7 @@ Using `build` with `scikit-build-core` will build and package the two components
 pip install build
 CMAKE_ARGS="--preset=ipc" python -m build
 
-CMAKE_ARGS="--preset=ipc python -m build
+CMAKE_ARGS="--preset=ipc" python -m build
 ```
 
 ### Standalone CMake
