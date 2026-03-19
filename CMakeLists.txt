@@ -37,16 +37,6 @@ project(
 
 include(cmake/utils.cmake)
 
-option(NOVAPHY_ENABLE_INSTALL
-    "Control whether to enable install targets for NovaPhy. \
-    Should be OFF when building as subproject."
-    ON
-)
-if (NOT (CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME))
-    set(NOVAPHY_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
-endif()
-
-
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -126,6 +116,4 @@ if(NOT DEFINED SKBUILD)
 endif()
 
 # Install CMake config files
-if (NOVAPHY_ENABLE_INSTALL)
-    novaphy_post_install()
-endif()
+novaphy_post_install()

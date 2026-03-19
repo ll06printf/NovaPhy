@@ -29,16 +29,14 @@ if(NOVAPHY_WITH_IPC)
 
 endif()
 
-if (NOVAPHY_ENABLE_INSTALL)
-    novaphy_export_pybind(_core)
+novaphy_export_pybind(_core)
 
-    if (SKBUILD AND NOVAPHY_BUNDLE_DEPENDENCIES)
-        novaphy_bundle_dependencies(_core)
-        # The dependency of libuipc is hidden by CMake's target system, so we need to explicitly bundle it here
-        novaphy_bundle_files(GLOB
-            "${CMAKE_BINARY_DIR}/${NOVAPHY_CONFIG_TYPE}/bin/*.dll" 
-            "${CMAKE_BINARY_DIR}/${NOVAPHY_CONFIG_TYPE}/bin/*.so" 
-            "${CMAKE_BINARY_DIR}/${NOVAPHY_CONFIG_TYPE}/bin/*.dylib"
-        )
-    endif()
+if (SKBUILD AND NOVAPHY_BUNDLE_DEPENDENCIES)
+    novaphy_bundle_dependencies(_core)
+    # The dependency of libuipc is hidden by CMake's target system, so we need to explicitly bundle it here
+    novaphy_bundle_files(GLOB
+        "${CMAKE_BINARY_DIR}/${NOVAPHY_CONFIG_TYPE}/bin/*.dll" 
+        "${CMAKE_BINARY_DIR}/${NOVAPHY_CONFIG_TYPE}/bin/*.so" 
+        "${CMAKE_BINARY_DIR}/${NOVAPHY_CONFIG_TYPE}/bin/*.dylib"
+    )
 endif()

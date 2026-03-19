@@ -30,18 +30,14 @@ if(TARGET uipc::backends)
     add_dependencies(novaphy_ipc uipc::backends)
 endif()
 
-if (NOVAPHY_ENABLE_INSTALL)
-
-    # TODO Disable CMake config export since libuipc doesn't export targets, 
-    # and we don't want to force all users to use find_package(uipc) themselves. 
-    # Instead, we can provide a custom Finduipc.cmake that sets the necessary 
-    # variables for users to link against libuipc. This is a temporary 
-    # workaround until libuipc provides proper CMake targets for its components.
-    novaphy_header_set(novaphy_ipc
-        BASE_DIR ${PROJECT_SOURCE_DIR}/include
-        PATTERNS
-            ${PROJECT_SOURCE_DIR}/include/novaphy/ipc/*.h
-    )
-    novaphy_export_library(novaphy_ipc COMPONENT ipc XNAME ipc WITHOUT_CMAKE_CONFIG)
-
-endif()
+# TODO Disable CMake config export since libuipc doesn't export targets, 
+# and we don't want to force all users to use find_package(uipc) themselves. 
+# Instead, we can provide a custom Finduipc.cmake that sets the necessary 
+# variables for users to link against libuipc. This is a temporary 
+# workaround until libuipc provides proper CMake targets for its components.
+novaphy_header_set(novaphy_ipc
+    BASE_DIR ${PROJECT_SOURCE_DIR}/include
+    PATTERNS
+        ${PROJECT_SOURCE_DIR}/include/novaphy/ipc/*.h
+)
+novaphy_export_library(novaphy_ipc COMPONENT ipc XNAME ipc WITHOUT_CMAKE_CONFIG)

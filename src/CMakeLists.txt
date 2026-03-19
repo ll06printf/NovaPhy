@@ -41,24 +41,21 @@ target_compile_definitions(novaphy_core PUBLIC
     EIGEN_DEFAULT_DENSE_INDEX_TYPE=int
 )
 
-if (NOVAPHY_ENABLE_INSTALL)
-    novaphy_header_set(novaphy_core
-        BASE_DIR ${PROJECT_SOURCE_DIR}/include
-        PATTERNS
-            ${PROJECT_SOURCE_DIR}/include/novaphy/collision/*.h
-            ${PROJECT_SOURCE_DIR}/include/novaphy/core/*.h
-            ${PROJECT_SOURCE_DIR}/include/novaphy/dynamics/*.h
-            ${PROJECT_SOURCE_DIR}/include/novaphy/fluid/*.h
-            ${PROJECT_SOURCE_DIR}/include/novaphy/math/*.h
-            ${PROJECT_SOURCE_DIR}/include/novaphy/sim/*.h
-        FILES 
-            ${PROJECT_SOURCE_DIR}/include/novaphy/novaphy.h
-            ${PROJECT_SOURCE_DIR}/include/novaphy/novaphy_types.h
-    )
-    novaphy_header_set(novaphy_core
-        BASE_DIR ${PROJECT_BINARY_DIR}/include
-        FILES ${PROJECT_BINARY_DIR}/include/novaphy/novaphy_config.h
-    )
-    novaphy_export_library(novaphy_core COMPONENT core XNAME core DEPENDS Eigen3)
-
-endif()
+novaphy_header_set(novaphy_core
+    BASE_DIR ${PROJECT_SOURCE_DIR}/include
+    PATTERNS
+        ${PROJECT_SOURCE_DIR}/include/novaphy/collision/*.h
+        ${PROJECT_SOURCE_DIR}/include/novaphy/core/*.h
+        ${PROJECT_SOURCE_DIR}/include/novaphy/dynamics/*.h
+        ${PROJECT_SOURCE_DIR}/include/novaphy/fluid/*.h
+        ${PROJECT_SOURCE_DIR}/include/novaphy/math/*.h
+        ${PROJECT_SOURCE_DIR}/include/novaphy/sim/*.h
+    FILES 
+        ${PROJECT_SOURCE_DIR}/include/novaphy/novaphy.h
+        ${PROJECT_SOURCE_DIR}/include/novaphy/novaphy_types.h
+)
+novaphy_header_set(novaphy_core
+    BASE_DIR ${PROJECT_BINARY_DIR}/include
+    FILES ${PROJECT_BINARY_DIR}/include/novaphy/novaphy_config.h
+)
+novaphy_export_library(novaphy_core COMPONENT core XNAME core DEPENDS Eigen3)

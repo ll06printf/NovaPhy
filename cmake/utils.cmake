@@ -117,6 +117,15 @@ endfunction()
 # - Defines global/target properties used for component export and headers.
 function(setup_novaphy_packager)
 
+    # Install enable flag
+
+    set(_enable_doc "Enable installation targets and packaging utilities. Should be ON when building standalone, and OFF when building as a subproject.")
+    if (CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
+        set(NOVAPHY_ENABLE_INSTALL ON CACHE BOOL "${_enable_doc}")
+    else()
+        set(NOVAPHY_ENABLE_INSTALL OFF CACHE BOOL "${_enable_doc}")
+    endif()
+
     # Package type selection
 
     if (SKBUILD)
@@ -159,6 +168,7 @@ function(setup_novaphy_packager)
     # which is not supported by the minimum required CMake version of this project (3.18). 
     # Public headers are needed for both CMake and Wheel packages:
     # CMake export and wheel include-file generation.
+
     define_property(TARGET PROPERTY NOVAPHY_PUBLIC_HEADERS
         BRIEF_DOCS "The list of public headers of the target"
         FULL_DOCS "The list of public headers of the target, used for CMake export and Wheel package."
@@ -254,9 +264,14 @@ endfunction()
 # On Linux, RPATH is configured so the extension can resolve bundled
 # runtime libraries from relative wheel locations.
 function(novaphy_export_pybind target)
+
+    if (NOT NOVAPHY_ENABLE_INSTALL)
+        return()
+    endif()
+
     if(NOVAPHY_PACKAGE_TYPE STREQUAL "Wheel")
         _novaphy_add_component(pybind)
-        _novaphy_log("Installing python extension target '${target}' to '${NOVAPHY_WHL_DST_PREFIX}'")
+        _novaphy_log("Installing python extension target '${target}'")
         install(TARGETS ${target}
             RUNTIME DESTINATION ${NOVAPHY_WHL_DST_PREFIX}
             LIBRARY DESTINATION ${NOVAPHY_WHL_DST_PREFIX}
@@ -299,23 +314,31 @@ function(novaphy_export_library target)
         ${ARGN}
     )
 
+    if (exlab_XNAME) 
+        _novaphy_log("Creating alias 'novaphy::${exlab_XNAME}' for target '${target}'")
+        add_library(novaphy::${exlab_XNAME} ALIAS ${target})
+    endif()
+
+    if (NOT NOVAPHY_ENABLE_INSTALL)
+        return()
+    endif()
+
     # Installation config
     if (NOVAPHY_PACKAGE_TYPE STREQUAL "CMake")
-        if (exlab_XNAME) 
+
+        _novaphy_log("Exporting target '${target}' to CMake package, component='${exlab_COMPONENT}'")
+
+        if (exlab_XNAME)
             set_target_properties(${target} PROPERTIES
                 EXPORT_NAME ${exlab_XNAME}
             )
-            add_library(novaphy::${exlab_XNAME} ALIAS ${target})
         endif()
-
-        _novaphy_log("Exporting target '${target}' to CMake package, component='${exlab_COMPONENT}'")
 
         # Install configure
         set(export_arg "")
         if (NOT exlab_WITHOUT_CMAKE_CONFIG)
             _novaphy_add_component(${exlab_COMPONENT})
             set(export_arg EXPORT novaphy-${exlab_COMPONENT}-targets)
-            _novaphy_log("Enabled CMake export for target '${target}', component='${exlab_COMPONENT}'")
         endif()
 
         # Install binary
@@ -326,7 +349,6 @@ function(novaphy_export_library target)
             ARCHIVE DESTINATION ${NOVAPHY_LIB_DST}
             COMPONENT ${exlab_COMPONENT}
         )
-        _novaphy_log("Installed CMake library target '${target}' to '${NOVAPHY_LIB_DST}'")
 
         # Install headers
         get_target_property(headers ${target} NOVAPHY_PUBLIC_HEADERS)
@@ -342,7 +364,6 @@ function(novaphy_export_library target)
                 COMPONENT ${exlab_COMPONENT}
             )
         endforeach()
-        _novaphy_log("Installed public headers for target '${target}' to '${NOVAPHY_INCLUDE_DST}'")
 
         if (exlab_DEPENDS)
             foreach(dependency IN LISTS exlab_DEPENDS)
@@ -368,6 +389,10 @@ endfunction()
 # Install a third-party library target into the bundled runtime location.
 # Destination differs between CMake package and Wheel package layouts.
 function(novaphy_bundle_library target)
+    if (NOT NOVAPHY_ENABLE_INSTALL)
+        return()
+    endif()
+    
     if (NOVAPHY_PACKAGE_TYPE STREQUAL "CMake")
         install(TARGETS ${target}
             RUNTIME DESTINATION ${NOVAPHY_BUNDLED_DST}
@@ -400,6 +425,9 @@ endfunction()
 # GLOB is resolved at install time through install(CODE), which is useful
 # for cases where files are generated after configuration.
 function(novaphy_bundle_files)
+    if (NOT NOVAPHY_ENABLE_INSTALL)
+        return()
+    endif()
 
     cmake_parse_arguments(bfiles 
         ""
@@ -439,6 +467,10 @@ endfunction()
 # Dependencies are resolved via find_target_dlls() and installed into the
 # package-specific bundled runtime directory.
 function(novaphy_bundle_dependencies target)
+    if (NOT NOVAPHY_ENABLE_INSTALL)
+        return()
+    endif()
+
     get_target_property(target_type ${target} TYPE)
     if (NOT target_type STREQUAL "EXECUTABLE" 
         AND NOT target_type STREQUAL "SHARED_LIBRARY" 
@@ -478,6 +510,10 @@ endfunction()
 #
 # Files generated here are installed as the "dev" component.
 function(novaphy_post_install)
+    if (NOT NOVAPHY_ENABLE_INSTALL)
+        return()
+    endif()
+
     if (NOVAPHY_PACKAGE_TYPE STREQUAL "CMake")
         include(CMakePackageConfigHelpers)
         # Create targets file for each component
