@@ -40,7 +40,7 @@ function(novaphy_install_dependencies target_type target_path dst)
             RESOLVED_DEPENDENCIES_VAR resolved_deps
             UNRESOLVED_DEPENDENCIES_VAR unresolved_deps
             EXECUTABLES ${target_path}
-            PRE_EXTRACT_REGEXES 
+            PRE_EXCLUDE_REGEXES
                 ${WINDOWS_IGNORE_REGEX}
                 ${LINUX_IGNORE_REGEX}
         )
@@ -49,7 +49,7 @@ function(novaphy_install_dependencies target_type target_path dst)
             RESOLVED_DEPENDENCIES_VAR resolved_deps
             UNRESOLVED_DEPENDENCIES_VAR unresolved_deps
             LIBRARIES ${target_path}
-            PRE_EXTRACT_REGEXES 
+            PRE_EXCLUDE_REGEXES
                 ${WINDOWS_IGNORE_REGEX}
                 ${LINUX_IGNORE_REGEX}
         )
