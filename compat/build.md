@@ -93,21 +93,7 @@ Here are problems about library conflict:
 
 - `CUDA12` has conflict implementation of some math function to `glibc 2.43` which added `noexcept` to math functions. It will break compiling with strict `noexcept` checking compiler (almost all version of Clang).
 
-## Components Packaging and Installation
-
-Overall, NovaPhy has two components:
-
-- A Python binding as the frontend
-- A C++ library as the backend
-
-Because the backend is statically linked to the Python extension in this project, any package that includes the frontend also includes the backend. However, the backend can also be built and distributed independently.
-
-Two methods are provided for handling the backend's largest dependency, `libuipc`: bundled and standalone. The bundled method means `libuipc` will be included in the backend component, and NovaPhy will not rely on `libuipc` from the system or virtual environment. The standalone method means `libuipc` will be imported from the environment, and the binary target of `libuipc` will not be included in the package. Note that `libuipc` in this context refers to its C++ library only; the Python binding will never be included in the NovaPhy wheel package. Although we allow `libuipc` to be detached from NovaPhy, its incomplete CMake packaging support makes it difficult to use the NovaPhy C++ library without a bundled `libuipc`. Use CMake option `NOVAPHY_BUNDLE_UIPC` to control the behavior.
-
-There are two packaging methods:
-
-- Building with standard Python build tools, using `scikit-build-core` as the build backend.
-- Building with CMake without `scikit-build-core`, which allows you to build a C/C++ package.
+## Build and Package
 
 ### Package with Python build tools
 
@@ -117,8 +103,7 @@ Using `build` with `scikit-build-core` will build and package the two components
 pip install build
 CMAKE_ARGS="--preset=ipc" python -m build
 
-# Or, use libuipc from the environment
-CMAKE_ARGS="--preset=ipc -DNOVAPHY_BUNDLE_UIPC=OFF" python -m build
+CMAKE_ARGS="--preset=ipc python -m build
 ```
 
 ### Standalone CMake
