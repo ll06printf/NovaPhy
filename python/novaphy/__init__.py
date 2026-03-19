@@ -10,20 +10,7 @@ import sys as _sys
 from pathlib import Path as _Path
 
 def _add_dll_directories():
-    """Add DLL search paths for libuipc and its dependencies on Windows."""
-    if _sys.platform != "win32":
-        return
-    # Find the build directory relative to this package
-    _pkg_dir = _Path(__file__).resolve().parent
-    _build_root = _pkg_dir.parent.parent / "build"
-    # Try all potential build dirs (scikit-build-core naming pattern)
-    for _d in sorted(_build_root.glob("cp*-win_amd64"), reverse=True):
-        _bin_dir = _d / "Release" / "bin"
-        if _bin_dir.is_dir():
-            _os.add_dll_directory(str(_bin_dir))
-        _vcpkg_bin = _d / "vcpkg_installed" / "x64-windows" / "bin"
-        if _vcpkg_bin.is_dir():
-            _os.add_dll_directory(str(_vcpkg_bin))
+
     # CUDA runtime
     _cuda_path = _os.environ.get("CUDA_PATH", "")
     if _cuda_path:
