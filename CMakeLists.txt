@@ -23,7 +23,7 @@ else()
 
     if (NOVAPHY_BUNDLE_DEPENDENCIES)
         message(WARNING "NOVAPHY_BUNDLE_DEPENDENCIES is enabled, but SKBUILD is not defined. This option only has an effect when building with SKBUILD (e.g. via pip install).")
-        set(NOVAPHY_BUNDLE_DEPENDENCIES OFF CACHE BOOL FORECE)
+        set(NOVAPHY_BUNDLE_DEPENDENCIES OFF CACHE BOOL "" FORCE)
     endif()
 endif()
 
