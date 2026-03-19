@@ -35,6 +35,9 @@ set(LINUX_IGNORE_REGEX
 
 function(novaphy_install_dependencies target_type target_path dst)
     message(STATUS "Installing dependencies for ${target_path} to ${dst}")
+    message(DEBUG "  Target type: ${target_type}")
+    message(DEBUG "  Target path: ${target_path}")
+    message(DEBUG "  Destination: ${dst}")
     if (target_type STREQUAL "EXECUTABLE")
         file(GET_RUNTIME_DEPENDENCIES
             RESOLVED_DEPENDENCIES_VAR resolved_deps
@@ -56,11 +59,24 @@ function(novaphy_install_dependencies target_type target_path dst)
     else()
         message(FATAL_ERROR "Target type '${target_type}' is not supported for dependency installation")
     endif()
+    
+    list(LENGTH resolved_deps resolved_count)
+    list(LENGTH unresolved_deps unresolved_count)
+    message(DEBUG "  Resolved dependencies: ${resolved_count}")
+    message(DEBUG "  Unresolved dependencies: ${unresolved_count}")
+    
     if (unresolved_deps)
         message(WARNING "Unresolved dependencies for ${target_path}: ${unresolved_deps}")
     endif()
+    
+    if (resolved_deps)
+        message(DEBUG "  Installing ${resolved_count} dependencies:")
+    else()
+        message(DEBUG "  No dependencies to install")
+    endif()
+    
     foreach(dep IN LISTS resolved_deps)
-        message(STATUS "Copying dependency ${dep} for ${target_path}")
+        message(DEBUG "    Installing: ${dep}")
         file(INSTALL ${dep} DESTINATION ${dst})
     endforeach()
 endfunction()
