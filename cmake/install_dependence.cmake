@@ -78,6 +78,6 @@ function(novaphy_install_dependencies target_type target_path dst)
     
     foreach(dep IN LISTS resolved_deps)
         message(DEBUG "    Installing: ${dep}")
-        file(INSTALL ${dep} DESTINATION ${dst})
+        file(INSTALL DESTINATION "${dst}" FILES "${dep}")
     endforeach()
 endfunction()
