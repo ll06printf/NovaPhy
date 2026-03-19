@@ -4,6 +4,9 @@ cmake_minimum_required(VERSION 3.15...4.0)
 
 project(NovaPhyAddSubdirectoryTest LANGUAGES CXX)
 
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 # Before build the project, copy NovaPhy source code to ./NovaPhy directory
 add_subdirectory(NovaPhy)
 

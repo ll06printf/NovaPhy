@@ -310,8 +310,17 @@ function(novaphy_export_library target)
 
         _novaphy_log("Exporting target '${target}' to CMake package, component='${exlab_COMPONENT}'")
 
+        # Install configure
+        set(export_arg "")
+        if (NOT exlab_WITHOUT_CMAKE_CONFIG)
+            _novaphy_add_component(${exlab_COMPONENT})
+            set(export_arg EXPORT novaphy-${exlab_COMPONENT}-targets)
+            _novaphy_log("Enabled CMake export for target '${target}', component='${exlab_COMPONENT}'")
+        endif()
+
         # Install binary
         install(TARGETS ${target}
+            ${export_arg}
             RUNTIME DESTINATION ${NOVAPHY_LIB_DST}
             LIBRARY DESTINATION ${NOVAPHY_LIB_DST}
             ARCHIVE DESTINATION ${NOVAPHY_LIB_DST}
@@ -335,18 +344,8 @@ function(novaphy_export_library target)
         endforeach()
         _novaphy_log("Installed public headers for target '${target}' to '${NOVAPHY_INCLUDE_DST}'")
 
-        # Install configure
-        if (NOT exlab_WITHOUT_CMAKE_CONFIG)
-            _novaphy_add_component(${exlab_COMPONENT})
-            install(TARGETS ${target}
-                EXPORT novaphy-${exlab_COMPONENT}-targets
-                COMPONENT ${exlab_COMPONENT}
-            )
-            _novaphy_log("Enabled CMake export for target '${target}', component='${exlab_COMPONENT}'")
-        endif()
-
-        if (exlab_DEPENDENCIES)
-            foreach(dependency IN LISTS exlab_DEPENDENCIES)
+        if (exlab_DEPENDS)
+            foreach(dependency IN LISTS exlab_DEPENDS)
                 _novaphy_add_dependency(${dependency})
             endforeach()
         endif()

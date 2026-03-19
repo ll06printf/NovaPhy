@@ -49,7 +49,6 @@ int main() {
     const bool moved_down = (y1 < y0 - 1e-4f);
 
     std::cout << "NovaPhy version: " << novaphy::version() << '\n';
-    std::cout << "libuipc bind type: " << novaphy::libuipc_bind_type() << '\n';
     std::cout << "sphere y before: " << y0 << " after: " << y1 << '\n';
 
     if (!moved_down) {

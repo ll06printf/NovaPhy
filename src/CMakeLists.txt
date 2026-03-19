@@ -30,6 +30,7 @@ add_library(novaphy_core STATIC
 target_include_directories(novaphy_core PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
     $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
+    $<INSTALL_INTERFACE:include>
 )
 
 target_link_libraries(novaphy_core PUBLIC
@@ -52,11 +53,12 @@ if (NOVAPHY_ENABLE_INSTALL)
             ${PROJECT_SOURCE_DIR}/include/novaphy/sim/*.h
         FILES 
             ${PROJECT_SOURCE_DIR}/include/novaphy/novaphy.h
+            ${PROJECT_SOURCE_DIR}/include/novaphy/novaphy_types.h
     )
     novaphy_header_set(novaphy_core
         BASE_DIR ${PROJECT_BINARY_DIR}/include
         FILES ${PROJECT_BINARY_DIR}/include/novaphy/novaphy_config.h
     )
-    novaphy_export_library(novaphy_core COMPONENT core XNAME core)
+    novaphy_export_library(novaphy_core COMPONENT core XNAME core DEPENDS Eigen3)
 
 endif()
