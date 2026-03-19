@@ -34,7 +34,7 @@ if (NOVAPHY_ENABLE_INSTALL)
 
     if (SKBUILD AND NOVAPHY_BUNDLE_DEPENDENCIES)
         novaphy_bundle_dependencies(_core)
-        # The depenncy of libuipc is hidden by CMake's target system, so we need to explicitly bundle it here
+        # The dependency of libuipc is hidden by CMake's target system, so we need to explicitly bundle it here
         file(GLOB libuipc_dep 
             "${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/bin/*.dll" 
             "${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/bin/*.so" 
