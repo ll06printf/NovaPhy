@@ -18,6 +18,7 @@ set(WINDOWS_IGNORE_REGEX
     "shlwapi\\.dll" 
     "msvcp_win\\.dll"
     "msvcp.*\\.dll"
+    "vcruntime.*\\.dll"
 )
 
 set(LINUX_IGNORE_REGEX
