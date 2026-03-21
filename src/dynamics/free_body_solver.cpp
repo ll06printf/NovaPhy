@@ -7,6 +7,8 @@
 #include <algorithm>
 #include <cmath>
 
+#include "novaphy/sim/performance_monitor.h"
+
 namespace novaphy {
 
 /**
@@ -22,23 +24,34 @@ FreeBodySolver::FreeBodySolver(SolverSettings settings) : settings_(settings) {}
  * @param[in] transforms Body world transforms.
  * @param[in,out] linear_velocities Body linear velocities in world frame (m/s).
  * @param[in,out] angular_velocities Body angular velocities in world frame (rad/s).
+ * @param[in] sleeping Per-body sleep flags.
  * @param[in] dt Fixed simulation time step in seconds.
  */
-void FreeBodySolver::solve(std::vector<ContactPoint>& contacts,
-                            const std::vector<RigidBody>& bodies,
-                            const std::vector<Transform>& transforms,
-                            std::vector<Vec3f>& linear_velocities,
-                            std::vector<Vec3f>& angular_velocities,
-                            float dt) {
+void FreeBodySolver::solve(std::span<ContactPoint> contacts,
+                           std::span<const RigidBody> bodies,
+                           std::span<const Transform> transforms,
+                           std::span<Vec3f> linear_velocities,
+                           std::span<Vec3f> angular_velocities,
+                           std::span<const int> sleeping,
+                           float dt) {
     if (contacts.empty()) return;
 
-    pre_step(contacts, bodies, transforms, linear_velocities, angular_velocities, dt);
+    PerformanceMonitor* monitor = detail::current_performance_monitor();
+
+    {
+        detail::PerformancePhaseScope phase_scope(monitor, "world.solver.pre_step");
+        pre_step(contacts, bodies, transforms, linear_velocities, angular_velocities, sleeping, dt);
+    }
 
     // Warm start: apply accumulated impulses from previous frame
     if (settings_.warm_starting) {
+        detail::PerformancePhaseScope phase_scope(monitor, "world.solver.warm_start");
         for (size_t i = 0; i < contacts.size(); ++i) {
             auto& cp = contacts[i];
             auto& cd = constraint_data_[i];
+
+            // Skip sleep-sleep contact pairs
+            if (cd.effective_mass_n == 0.0f) continue;
 
             Vec3f impulse = cp.normal * cp.accumulated_normal_impulse +
                             cd.tangent1 * cp.accumulated_tangent_impulse_1 +
@@ -57,7 +70,9 @@ void FreeBodySolver::solve(std::vector<ContactPoint>& contacts,
 
     // Iterative velocity solving
     for (int iter = 0; iter < settings_.velocity_iterations; ++iter) {
-        solve_velocity(contacts, bodies, linear_velocities, angular_velocities);
+        detail::PerformancePhaseScope phase_scope(monitor,
+                                                  "world.solver.iteration.solve_velocity");
+        solve_velocity(contacts, bodies, linear_velocities, angular_velocities, sleeping);
     }
 }
 
@@ -68,19 +83,34 @@ void FreeBodySolver::solve(std::vector<ContactPoint>& contacts,
  * @param[in] transforms Body world transforms.
  * @param[in] linear_velocities Body linear velocities in world frame (m/s).
  * @param[in] angular_velocities Body angular velocities in world frame (rad/s).
+ * @param[in] sleeping Per-body sleep flags.
  * @param[in] dt Fixed simulation time step in seconds.
  */
-void FreeBodySolver::pre_step(std::vector<ContactPoint>& contacts,
-                               const std::vector<RigidBody>& bodies,
-                               const std::vector<Transform>& transforms,
-                               const std::vector<Vec3f>& linear_velocities,
-                               const std::vector<Vec3f>& angular_velocities,
-                               float dt) {
+void FreeBodySolver::pre_step(std::span<ContactPoint> contacts,
+                              std::span<const RigidBody> bodies,
+                              std::span<const Transform> transforms,
+                              std::span<const Vec3f> linear_velocities,
+                              std::span<const Vec3f> angular_velocities,
+                              std::span<const int> sleeping,
+                              float dt) {
     constraint_data_.resize(contacts.size());
 
     for (size_t i = 0; i < contacts.size(); ++i) {
         auto& cp = contacts[i];
         auto& cd = constraint_data_[i];
+
+        // Skip sleep-sleep contact pairs (mark as invalid by setting effective_mass to 0)
+        bool a_sleeping = (cp.body_a >= 0 && cp.body_a < static_cast<int>(sleeping.size()))
+                          ? sleeping[cp.body_a] != 0 : false;
+        bool b_sleeping = (cp.body_b >= 0 && cp.body_b < static_cast<int>(sleeping.size()))
+                          ? sleeping[cp.body_b] != 0 : false;
+
+        if (a_sleeping && b_sleeping) {
+            cd.effective_mass_n = 0.0f;
+            cd.effective_mass_t1 = 0.0f;
+            cd.effective_mass_t2 = 0.0f;
+            continue;  // Skip computation for sleep-sleep pairs
+        }
 
         // Compute contact point relative to body COMs
         if (cp.body_a >= 0) {
@@ -177,14 +207,19 @@ void FreeBodySolver::pre_step(std::vector<ContactPoint>& contacts,
  * @param[in] bodies Rigid-body mass and inertia properties.
  * @param[in,out] linear_velocities Body linear velocities in world frame (m/s).
  * @param[in,out] angular_velocities Body angular velocities in world frame (rad/s).
+ * @param[in] sleeping Per-body sleep flags.
  */
-void FreeBodySolver::solve_velocity(std::vector<ContactPoint>& contacts,
-                                     const std::vector<RigidBody>& bodies,
-                                     std::vector<Vec3f>& linear_velocities,
-                                     std::vector<Vec3f>& angular_velocities) {
+void FreeBodySolver::solve_velocity(std::span<ContactPoint> contacts,
+                                    std::span<const RigidBody> bodies,
+                                    std::span<Vec3f> linear_velocities,
+                                    std::span<Vec3f> angular_velocities,
+                                    std::span<const int> sleeping) {
     for (size_t i = 0; i < contacts.size(); ++i) {
         auto& cp = contacts[i];
         auto& cd = constraint_data_[i];
+
+        // Skip sleep-sleep contact pairs (marked in pre_step)
+        if (cd.effective_mass_n == 0.0f) continue;
 
         float inv_mass_a = (cp.body_a >= 0) ? bodies[cp.body_a].inv_mass() : 0.0f;
         float inv_mass_b = (cp.body_b >= 0) ? bodies[cp.body_b].inv_mass() : 0.0f;

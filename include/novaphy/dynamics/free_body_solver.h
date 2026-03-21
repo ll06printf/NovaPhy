@@ -1,5 +1,6 @@
 #pragma once
 
+#include <span>
 #include <vector>
 
 #include "novaphy/core/body.h"
@@ -21,6 +22,12 @@ struct SolverSettings {
     float baumgarte = 0.3f;        /**< Fraction of position error corrected per step (dimensionless). */
     float slop = 0.005f;           /**< Penetration allowance before correction in meters. */
     bool warm_starting = true;     /**< Reuse cached impulses from previous frame to speed convergence. */
+
+    // Sleep mechanism settings
+    bool sleep_enabled = false;                    /**< Enable sleep mechanism to freeze stationary bodies. */
+    float sleep_energy_threshold = 0.01f;          /**< Kinetic energy threshold for sleep (universal, all scenarios). */
+    float sleep_time_required = 0.5f;              /**< Time below threshold before sleeping (seconds). */
+    float sleep_ema_alpha = 0.8f;                  /**< EMA smoothing factor for energy (0-1). */
 };
 
 /**
@@ -56,14 +63,16 @@ public:
      * @param [in] transforms Body transforms in world coordinates.
      * @param [in,out] linear_velocities Body linear velocities in world frame (m/s).
      * @param [in,out] angular_velocities Body angular velocities in world frame (rad/s).
+     * @param [in] sleeping Per-body sleep flags.
      * @param [in] dt Simulation time step in seconds.
      * @return void
      */
-    void solve(std::vector<ContactPoint>& contacts,
-               const std::vector<RigidBody>& bodies,
-               const std::vector<Transform>& transforms,
-               std::vector<Vec3f>& linear_velocities,
-               std::vector<Vec3f>& angular_velocities,
+    void solve(std::span<ContactPoint> contacts,
+               std::span<const RigidBody> bodies,
+               std::span<const Transform> transforms,
+               std::span<Vec3f> linear_velocities,
+               std::span<Vec3f> angular_velocities,
+               std::span<const int> sleeping,
                float dt);
 
     /**
@@ -100,14 +109,16 @@ private:
      * @param [in] transforms Body transforms in world coordinates.
      * @param [in] linear_velocities Current body linear velocities in world frame (m/s).
      * @param [in] angular_velocities Current body angular velocities in world frame (rad/s).
+     * @param [in] sleeping Per-body sleep flags.
      * @param [in] dt Simulation time step in seconds.
      * @return void
      */
-    void pre_step(std::vector<ContactPoint>& contacts,
-                  const std::vector<RigidBody>& bodies,
-                  const std::vector<Transform>& transforms,
-                  const std::vector<Vec3f>& linear_velocities,
-                  const std::vector<Vec3f>& angular_velocities,
+    void pre_step(std::span<ContactPoint> contacts,
+                  std::span<const RigidBody> bodies,
+                  std::span<const Transform> transforms,
+                  std::span<const Vec3f> linear_velocities,
+                  std::span<const Vec3f> angular_velocities,
+                  std::span<const int> sleeping,
                   float dt);
 
     /**
@@ -117,12 +128,14 @@ private:
      * @param [in] bodies Rigid-body mass properties.
      * @param [in,out] linear_velocities Body linear velocities in world frame (m/s).
      * @param [in,out] angular_velocities Body angular velocities in world frame (rad/s).
+     * @param [in] sleeping Per-body sleep flags.
      * @return void
      */
-    void solve_velocity(std::vector<ContactPoint>& contacts,
-                        const std::vector<RigidBody>& bodies,
-                        std::vector<Vec3f>& linear_velocities,
-                        std::vector<Vec3f>& angular_velocities);
+    void solve_velocity(std::span<ContactPoint> contacts,
+                        std::span<const RigidBody> bodies,
+                        std::span<Vec3f> linear_velocities,
+                        std::span<Vec3f> angular_velocities,
+                        std::span<const int> sleeping);
 };
 
 }  // namespace novaphy

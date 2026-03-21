@@ -1,11 +1,12 @@
 cmake_minimum_required(VERSION 3.15...4.0)
 
-# ---------- Optional IPC support via libuipc ----------
-# Must be declared before project() so vcpkg installs the 'ipc' feature deps.
+# ---------- Optional features ----------
+# Must be declared before project() so vcpkg installs feature deps when needed.
 option(NOVAPHY_WITH_IPC "Build with libuipc IPC support (requires CUDA >= 12.4)" OFF)
 option(NOVAPHY_BUNDLE_DEPENDENCIES "Bundle dependencies with NovaPhy Wheel Package." ON)
 
 # Processing options
+option(NOVAPHY_WITH_VBD_CUDA "Build VBD with CUDA backend (requires CUDA compiler)" OFF)
 
 if(NOVAPHY_WITH_IPC)
     list(APPEND VCPKG_MANIFEST_FEATURES "ipc")
@@ -37,12 +38,22 @@ project(
 
 include(cmake/utils.cmake)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+# Enable CUDA when a compiler is available (for VBD and/or IPC). VBD can use
+# CUDA without IPC; IPC requires CUDA.
+include(CheckLanguage)
+check_language(CUDA)
+if(CMAKE_CUDA_COMPILER)
+    enable_language(CUDA)
+endif()
 
 # Find Eigen3 via vcpkg
 find_package(Eigen3 CONFIG REQUIRED)
+find_package(tinyxml2 CONFIG REQUIRED)
 
 # Find pybind11 from pip-installed package (not vcpkg)
 find_package(pybind11 CONFIG REQUIRED)
@@ -50,17 +61,16 @@ find_package(pybind11 CONFIG REQUIRED)
 # Core C++ library
 add_subdirectory(src)
 
+# VBD/AVBD module (always built; CUDA backend only when NOVAPHY_WITH_VBD_CUDA=ON)
+add_subdirectory(src/vbd)
+
 if(NOVAPHY_WITH_IPC)
-    # CUDA is required by libuipc
-    include(CheckLanguage)
-    check_language(CUDA)
-    if(CMAKE_CUDA_COMPILER)
-        enable_language(CUDA)
-        if(CMAKE_CUDA_COMPILER_VERSION VERSION_LESS "12.4")
-            message(FATAL_ERROR "NOVAPHY_WITH_IPC requires CUDA >= 12.4, found ${CMAKE_CUDA_COMPILER_VERSION}")
-        endif()
-    else()
+    # IPC requires CUDA and version >= 12.4 (enable_language already done above if compiler found)
+    if(NOT CMAKE_CUDA_COMPILER)
         message(FATAL_ERROR "NOVAPHY_WITH_IPC requires CUDA, but no CUDA compiler was found")
+    endif()
+    if(CMAKE_CUDA_COMPILER_VERSION VERSION_LESS "12.4")
+        message(FATAL_ERROR "NOVAPHY_WITH_IPC requires CUDA >= 12.4, found ${CMAKE_CUDA_COMPILER_VERSION}")
     endif()
 
     # Configure libuipc: disable components we don't need

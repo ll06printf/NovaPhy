@@ -55,7 +55,7 @@ endfunction()
 # - NOVAPHY_CMAKE_CONFIG_DST: root for generated CMake package config files
 function(setup_cmake_package_layout)
     set(NOVAPHY_INCLUDE_DST include CACHE PATH
-        "The install path of public headers"
+        "The install path of public header"
     )
     set(NOVAPHY_LIB_DST lib CACHE PATH
         "The install path of libraries"
@@ -157,11 +157,15 @@ function(setup_novaphy_packager)
 
     define_property(GLOBAL PROPERTY NOVAPHY_PACKAGE_COMPONENTS
         BRIEF_DOCS "The list of components of novaphy package"
-        FULL_DOCS "The list of components of novaphy package, used for CMake export and Wheel package."
+        FULL_DOCS "The list of components of novaphy package, used to controll CMake export and Wheel package."
     )
+
     define_property(GLOBAL PROPERTY NOVAPHY_PACKAGE_DEPENDENCIES
         BRIEF_DOCS "The list of dependencies of novaphy package"
-        FULL_DOCS "The list of dependencies of novaphy package, used for CMake export and Wheel package."
+        FULL_DOCS 
+        "The list of dependencies of novaphy package, it will be written into CMake config files for CMake package,
+        i.e. find_dependency(<dependency> REQUIRED) will be added for each dependency in the list. For Wheel package, 
+        this variable is not used currently but may be used for future enhancements."
     )
 
     # The following properties simulate FILE_SET HEADERS from CMake 3.23,
@@ -177,6 +181,51 @@ function(setup_novaphy_packager)
         BRIEF_DOCS "The base directory of public headers of the target"
         FULL_DOCS "The base directory of public headers of the target, used for CMake export and Wheel package."
     )
+
+    define_property(GLOBAL PROPERTY NOVAPHY_PACKAGE_DLLS
+        BRIEF_DOCS "The list of external DLLs/shared libraries to be bundled."
+        FULL_DOCS 
+        "The list of external DLLs/shared libraries to be bundled, used to remove
+         repeated DLLs/shared libraries when bundling dependencies for Wheel and CMake packages."
+    )
+    define_property(GLOBAL PROPERTY NOVAPHY_BUNDLE_DLLS
+        BRIEF_DOCS "The list of bundled external DLLs/shared libraries."
+        FULL_DOCS "It will used to remove repeated DLLs/shared libraries when bundling dependencies for Wheel and CMake packages."
+    )
+endfunction()
+
+function(_novaphy_add_package_dlls dlls)
+    get_property(existing_dlls GLOBAL PROPERTY NOVAPHY_PACKAGE_DLLS)
+    list(APPEND existing_dlls ${dlls})
+    list(REMOVE_DUPLICATES existing_dlls)
+    set_property(GLOBAL PROPERTY NOVAPHY_PACKAGE_DLLS ${existing_dlls})
+endfunction()
+
+function(_novaphy_add_bundle_dlls dlls)
+    get_property(existing_dlls GLOBAL PROPERTY NOVAPHY_BUNDLE_DLLS)
+    list(APPEND existing_dlls ${dlls})
+    list(REMOVE_DUPLICATES existing_dlls)
+    set_property(GLOBAL PROPERTY NOVAPHY_BUNDLE_DLLS ${existing_dlls})
+endfunction()
+
+# Append one package component into the global component registry.
+# Duplicates are removed to keep exports deterministic.
+function(_novaphy_add_component component)
+    get_property(components GLOBAL PROPERTY NOVAPHY_PACKAGE_COMPONENTS)
+    list(APPEND components ${component})
+    list(REMOVE_DUPLICATES components)
+    set_property(GLOBAL PROPERTY NOVAPHY_PACKAGE_COMPONENTS ${components})
+    _novaphy_log("Added package component '${component}'")
+endfunction()
+
+# Append one dependency name into the global dependency registry.
+# Duplicates are removed before persisting back to the global property.
+function(_novaphy_add_dependency dependency)
+    get_property(dependencies GLOBAL PROPERTY NOVAPHY_PACKAGE_DEPENDENCIES)
+    list(APPEND dependencies ${dependency})
+    list(REMOVE_DUPLICATES dependencies)
+    set_property(GLOBAL PROPERTY NOVAPHY_PACKAGE_DEPENDENCIES ${dependencies})
+    _novaphy_log("Recorded package dependency '${dependency}'")
 endfunction()
 
 # Register public header files for a target.
@@ -234,26 +283,6 @@ function(novaphy_header_set target)
     )
     list(LENGTH headers header_count)
     _novaphy_log("Registered ${header_count} public header(s) for target '${target}'")
-endfunction()
-
-# Append one package component into the global component registry.
-# Duplicates are removed to keep exports deterministic.
-function(_novaphy_add_component component)
-    get_property(components GLOBAL PROPERTY NOVAPHY_PACKAGE_COMPONENTS)
-    list(APPEND components ${component})
-    list(REMOVE_DUPLICATES components)
-    set_property(GLOBAL PROPERTY NOVAPHY_PACKAGE_COMPONENTS ${components})
-    _novaphy_log("Added package component '${component}'")
-endfunction()
-
-# Append one dependency name into the global dependency registry.
-# Duplicates are removed before persisting back to the global property.
-function(_novaphy_add_dependency dependency)
-    get_property(dependencies GLOBAL PROPERTY NOVAPHY_PACKAGE_DEPENDENCIES)
-    list(APPEND dependencies ${dependency})
-    list(REMOVE_DUPLICATES dependencies)
-    set_property(GLOBAL PROPERTY NOVAPHY_PACKAGE_DEPENDENCIES ${dependencies})
-    _novaphy_log("Recorded package dependency '${dependency}'")
 endfunction()
 
 # Install the python extension module, enabled if the target 
@@ -314,6 +343,10 @@ function(novaphy_export_library target)
         ${ARGN}
     )
 
+    if (NOT TARGET ${target})
+        message(FATAL_ERROR "Target '${target}' does not exist for novaphy_export_library")
+    endif()
+
     if (exlab_XNAME) 
         _novaphy_log("Creating alias 'novaphy::${exlab_XNAME}' for target '${target}'")
         add_library(novaphy::${exlab_XNAME} ALIAS ${target})
@@ -322,6 +355,8 @@ function(novaphy_export_library target)
     if (NOT NOVAPHY_ENABLE_INSTALL)
         return()
     endif()
+
+    _novaphy_add_package_dlls($<TARGET_FILE:${target}>)
 
     # Installation config
     if (NOVAPHY_PACKAGE_TYPE STREQUAL "CMake")
@@ -353,17 +388,21 @@ function(novaphy_export_library target)
         # Install headers
         get_target_property(headers ${target} NOVAPHY_PUBLIC_HEADERS)
         get_target_property(headers_prefix ${target} NOVAPHY_HEADERS_PREFIX)
-        list(LENGTH headers num_headers)
-        list(LENGTH headers_prefix num_headers_prefix)
-        if (NOT num_headers EQUAL num_headers_prefix)
-            message(FATAL_ERROR "The number of headers and headers prefixes must be the same for target ${target}")
+        if (NOT headers)
+            message(WARNING "No public headers registered for target '${target}'")
+        else()
+            list(LENGTH headers num_headers)
+            list(LENGTH headers_prefix num_headers_prefix)
+            if (NOT num_headers EQUAL num_headers_prefix)
+                message(FATAL_ERROR "The number of headers and headers prefixes must be the same for target ${target}")
+            endif()
+            foreach(header header_prefix IN ZIP_LISTS headers headers_prefix)
+                install(FILES ${header}
+                    DESTINATION ${NOVAPHY_INCLUDE_DST}/${header_prefix}
+                    COMPONENT ${exlab_COMPONENT}
+                )
+            endforeach()
         endif()
-        foreach(header header_prefix IN ZIP_LISTS headers headers_prefix)
-            install(FILES ${header}
-                DESTINATION ${NOVAPHY_INCLUDE_DST}/${header_prefix}
-                COMPONENT ${exlab_COMPONENT}
-            )
-        endforeach()
 
         if (exlab_DEPENDS)
             foreach(dependency IN LISTS exlab_DEPENDS)
@@ -382,36 +421,6 @@ function(novaphy_export_library target)
         message(FATAL_ERROR "Unexpected package type: ${NOVAPHY_PACKAGE_TYPE}")
     endif()
 
-endfunction()
-
-# Bundled third-party library; implementation differs by package type.
-# be different for CMake and Wheel package.
-# Install a third-party library target into the bundled runtime location.
-# Destination differs between CMake package and Wheel package layouts.
-function(novaphy_bundle_library target)
-    if (NOT NOVAPHY_ENABLE_INSTALL)
-        return()
-    endif()
-    
-    if (NOVAPHY_PACKAGE_TYPE STREQUAL "CMake")
-        install(TARGETS ${target}
-            RUNTIME DESTINATION ${NOVAPHY_BUNDLED_DST}
-            LIBRARY DESTINATION ${NOVAPHY_BUNDLED_DST}
-            ARCHIVE DESTINATION ${NOVAPHY_BUNDLED_DST}
-            COMPONENT bundled
-        )
-        _novaphy_log("Installed bundled target '${target}' to '${NOVAPHY_BUNDLED_DST}' (CMake package)")
-    elseif(NOVAPHY_PACKAGE_TYPE STREQUAL "Wheel")
-        install(TARGETS ${target}
-            RUNTIME DESTINATION ${NOVAPHY_WHL_BUNEDLED_DST}
-            LIBRARY DESTINATION ${NOVAPHY_WHL_BUNEDLED_DST}
-            ARCHIVE DESTINATION ${NOVAPHY_WHL_BUNEDLED_DST}
-            COMPONENT bundled
-        )
-        _novaphy_log("Installed bundled target '${target}' to '${NOVAPHY_WHL_BUNEDLED_DST}' (Wheel package)")
-    else()
-        message(FATAL_ERROR "Unexpected package type: ${NOVAPHY_PACKAGE_TYPE}")
-    endif()
 endfunction()
 
 # Bundle arbitrary files into the package-specific bundled directory.
@@ -467,6 +476,10 @@ endfunction()
 # Dependencies are resolved via find_target_dlls() and installed into the
 # package-specific bundled runtime directory.
 function(novaphy_bundle_dependencies target)
+    if (NOT TARGET ${target})
+        message(FATAL_ERROR "Target '${target}' does not exist for novaphy_bundle_dependencies")
+    endif()
+
     if (NOT NOVAPHY_ENABLE_INSTALL)
         return()
     endif()
@@ -479,23 +492,40 @@ function(novaphy_bundle_dependencies target)
         message(FATAL_ERROR "Target '${target}' must be an executable or shared/module library to bundle dependencies")
     endif()
 
-    find_target_dlls(TARGET ${target} OUT_VAR dlls FILTER_IMPORTED)
-
     set(dst "")
+    set(lib_dir "")
     if (NOVAPHY_PACKAGE_TYPE STREQUAL "CMake")
         set(dst ${NOVAPHY_BUNDLED_DST})
+        set(lib_dir ${NOVAPHY_LIB_DST})
     elseif(NOVAPHY_PACKAGE_TYPE STREQUAL "Wheel")
         set(dst ${NOVAPHY_WHL_BUNEDLED_DST})
+        set(lib_dir ${NOVAPHY_WHL_LIB_DST})
     else()
         message(FATAL_ERROR "Unexpected package type: ${NOVAPHY_PACKAGE_TYPE}")
     endif()
 
+    # Search for DLL/shared library dependencies by CMake target dependencies.
+
+    find_target_dlls(TARGET ${target} OUT_VAR dlls FILTER_IMPORTED)
+
     if (dlls)
-        install(FILES ${dlls}
-            DESTINATION ${dst}
-            COMPONENT bundled
-        )
+        _novaphy_add_bundle_dlls(${dlls})
     endif()
+
+    # Find dependency by target file as install-time fallback, 
+    # which is useful for non-imported targets or imported 
+    # target is shodowed by CMake scope
+
+    install(CODE "
+        include(${PROJECT_SOURCE_DIR}/cmake/install_dependence.cmake)
+        novaphy_install_dependencies(
+            ${target_type} 
+            \"\$<TARGET_FILE:${target}>\"
+            \"\${CMAKE_INSTALL_PREFIX}/${dst}\"
+            \"\${CMAKE_INSTALL_PREFIX}/${lib_dir}\"
+        )
+    ")
+
 endfunction()
 
 # Generate and install CMake configuration files, only
@@ -513,6 +543,20 @@ function(novaphy_post_install)
     if (NOT NOVAPHY_ENABLE_INSTALL)
         return()
     endif()
+
+    # Install rule of bundled files
+
+    get_property(bdll GLOBAL PROPERTY NOVAPHY_BUNDLE_DLLS)
+    get_property(pdll GLOBAL PROPERTY NOVAPHY_PACKAGE_DLLS)
+    list(REMOVE_ITEM bdll ${pdll})
+    if (bdll)
+        install(FILES ${bdll}
+            DESTINATION ${NOVAPHY_BUNDLED_DST}
+            COMPONENT bundled
+        )
+    endif()
+
+    # CMake package 
 
     if (NOVAPHY_PACKAGE_TYPE STREQUAL "CMake")
         include(CMakePackageConfigHelpers)

@@ -50,6 +50,13 @@ class PyramidDemo(DemoApp):
         settings = novaphy.SolverSettings()
         settings.velocity_iterations = 30
         settings.warm_starting = True
+
+        # Sleep mechanism settings to prevent drift
+        settings.sleep_enabled = True
+        settings.sleep_energy_threshold = 0.01  # Universal energy threshold
+        settings.sleep_time_required = 0.5      # 0.5 seconds below threshold
+        settings.sleep_ema_alpha = 0.8          # EMA smoothing factor
+
         self.world = novaphy.World(model, settings)
 
 

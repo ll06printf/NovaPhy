@@ -10,13 +10,13 @@ import sys as _sys
 from pathlib import Path as _Path
 
 def _add_dll_directories():
-
     # CUDA runtime
-    _cuda_path = _os.environ.get("CUDA_PATH", "")
-    if _cuda_path:
-        _cuda_bin = _Path(_cuda_path) / "bin"
-        if _cuda_bin.is_dir():
-            _os.add_dll_directory(str(_cuda_bin))
+    if _sys.platform == "win32":
+        _cuda_path = _os.environ.get("CUDA_PATH", "")
+        if _cuda_path:
+            _cuda_bin = _Path(_cuda_path) / "bin"
+            if _cuda_bin.is_dir():
+                _os.add_dll_directory(str(_cuda_bin))
 
 _add_dll_directories()
 
@@ -43,6 +43,9 @@ from novaphy._core import (
     BroadPhasePair,
     SweepAndPrune,
     collide_shapes,
+    PerformanceMonitor,
+    PerformanceMetric,
+    PerformancePhaseStat,
     # Simulation
     ModelBuilder,
     Model,
@@ -70,6 +73,33 @@ from novaphy._core import (
     FluidWorld,
     BoundaryParticle,
     sample_model_boundaries,
+    UrdfGeometryType,
+    UrdfGeometry,
+    UrdfVisual,
+    UrdfCollision,
+    UrdfInertial,
+    UrdfLink,
+    UrdfJoint,
+    UrdfModelData,
+    UsdAnimationTrack,
+    UsdPrim,
+    UsdStageData,
+    SceneBuildResult,
+    FeatureCheckItem,
+    FeatureCheckReport,
+    RecordedKeyframe,
+    RecordedCollisionEvent,
+    RecordedConstraintReaction,
+    UrdfParser,
+    OpenUsdImporter,
+    SceneBuilderEngine,
+    SimulationExporter,
+    FeatureCompletenessChecker,
+    batch_transform_vertices,
+    # VBD/AVBD
+    VBDConfig,
+    VBDWorld,
+    VbdBackend,
 )
 
 # Optional IPC support (requires CUDA + libuipc)
@@ -99,6 +129,9 @@ __all__ = [
     "BroadPhasePair",
     "SweepAndPrune",
     "collide_shapes",
+    "PerformanceMonitor",
+    "PerformanceMetric",
+    "PerformancePhaseStat",
     "ModelBuilder",
     "Model",
     "SolverSettings",
@@ -122,6 +155,33 @@ __all__ = [
     "FluidWorld",
     "BoundaryParticle",
     "sample_model_boundaries",
+    "UrdfGeometryType",
+    "UrdfGeometry",
+    "UrdfVisual",
+    "UrdfCollision",
+    "UrdfInertial",
+    "UrdfLink",
+    "UrdfJoint",
+    "UrdfModelData",
+    "UsdAnimationTrack",
+    "UsdPrim",
+    "UsdStageData",
+    "SceneBuildResult",
+    "FeatureCheckItem",
+    "FeatureCheckReport",
+    "RecordedKeyframe",
+    "RecordedCollisionEvent",
+    "RecordedConstraintReaction",
+    "UrdfParser",
+    "OpenUsdImporter",
+    "SceneBuilderEngine",
+    "SimulationExporter",
+    "FeatureCompletenessChecker",
+    "batch_transform_vertices",
+    # VBD/AVBD
+    "VBDConfig",
+    "VBDWorld",
+    "VbdBackend",
 ]
 
 # Conditionally export IPC symbols
