@@ -5,14 +5,19 @@ set(BIND_SOURCES
     bind_math.cpp
     bind_core.cpp
     bind_collision.cpp
+    bind_performance.cpp
     bind_sim.cpp
     bind_dynamics.cpp
     bind_fluid.cpp
+    bind_io.cpp
 )
 
 if(NOVAPHY_WITH_IPC)
     list(APPEND BIND_SOURCES bind_ipc.cpp)
 endif()
+
+# VBD/AVBD bindings (always built; implementation currently)
+list(APPEND BIND_SOURCES bind_vbd.cpp)
 
 pybind11_add_module(_core ${BIND_SOURCES})
 
@@ -28,6 +33,8 @@ if(NOVAPHY_WITH_IPC)
     )
 
 endif()
+
+target_link_libraries(_core PRIVATE novaphy_vbd)
 
 novaphy_export_pybind(_core)
 

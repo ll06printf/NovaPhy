@@ -369,7 +369,7 @@ class build_config:
                 args.append(f"-DCMAKE_CUDA_HOST_COMPILER={cxx_path}")
                 nvcc_flags = self.nvcc_flags()
                 if nvcc_flags:
-                    args.append(f"-DCMAKE_CUDA_FLAGS=\"{' '.join(nvcc_flags)}\"")
+                    args.append(f"-DCMAKE_CUDA_FLAGS={' '.join(nvcc_flags)}")
 
         if self.compiler_launcher:
             args.append(f"-DCMAKE_CUDA_COMPILER_LAUNCHER={self.compiler_launcher}")
@@ -403,11 +403,11 @@ def main():
         if target == BuildTarget.CMAKE:
             command = ["cmake", "-S", ".", "-B", cfg.build_dir, *cmake_args]
         elif target == BuildTarget.WHEEL:
-            os.environ["CMAKE_ARGS"] = " ".join(cmake_args)
+            os.environ["CMAKE_ARGS"] = " ".join([f"\"{cmake_arg}\"" for cmake_arg in cmake_args])
             cfg.debug(f"Set CMAKE_ARGS={os.environ['CMAKE_ARGS']}")
-            command = ["python", "-m", "pip", "wheel", ".", "-Cbuild-dir=" + cfg.build_dir]
+            command = ["python", "-m", "build", "--wheel", ".", "-Cbuild-dir=" + cfg.build_dir]
         else:
-            os.environ["CMAKE_ARGS"] = " ".join(cmake_args)
+            os.environ["CMAKE_ARGS"] = " ".join([f"\"{cmake_arg}\"" for cmake_arg in cmake_args])
             cfg.debug(f"Set CMAKE_ARGS={os.environ['CMAKE_ARGS']}")
             command = ["python", "-m", "pip", "install", ".", "-Cbuild-dir=" + cfg.build_dir]
 

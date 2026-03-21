@@ -1,4 +1,7 @@
-# Helper functions for install script
+# Resolve and install runtime dependencies for the given target
+# at install time, excluding common system libraries.
+
+include_guard()
 
 set(WINDOWS_IGNORE_REGEX
     "api-ms-.*" 
@@ -35,11 +38,12 @@ set(LINUX_IGNORE_REGEX
     "^libasound\\.so.*"
 )
 
-function(novaphy_install_dependencies target_type target_path dst)
-    message(STATUS "Installing dependencies for ${target_path} to ${dst}")
+function(novaphy_install_dependencies target_type target_path dst package_dir)
+    message(STATUS "Installing dependencies for ${target_path}")
     message(DEBUG "  Target type: ${target_type}")
     message(DEBUG "  Target path: ${target_path}")
     message(DEBUG "  Destination: ${dst}")
+    message(DEBUG "  Package library directory: ${package_dir}")
     if (target_type STREQUAL "EXECUTABLE")
         file(GET_RUNTIME_DEPENDENCIES
             RESOLVED_DEPENDENCIES_VAR resolved_deps
@@ -79,6 +83,16 @@ function(novaphy_install_dependencies target_type target_path dst)
     
     foreach(dep IN LISTS resolved_deps)
         message(DEBUG "    Installing: ${dep}")
-        file(INSTALL DESTINATION "${dst}" FILES "${dep}")
+        get_filename_component(dep_name ${dep} NAME)
+        set(dep_full_path ${dst}/${dep_name})
+        set(dep_ex_full_path ${package_dir}/${dep_name})
+
+        if (EXISTS ${dep_ex_full_path} AND NOT ${dep} IS_NEWER_THAN ${dep_ex_full_path})
+            continue()
+        endif()
+
+        if (NOT EXISTS ${dep_full_path} OR NOT ${dep_full_path} IS_NEWER_THAN ${dep})
+            file(INSTALL DESTINATION "${dst}" FILES "${dep}")
+        endif()
     endforeach()
 endfunction()

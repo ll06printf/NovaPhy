@@ -6,3 +6,9 @@
 #define NOVAPHY_VERSION "@PROJECT_VERSION@"
 
 #cmakedefine01 NOVAPHY_WITH_IPC
+
+#if _WIN32
+    #define NOVAPHY_API __declspec(dllexport)
+#else
+    #define NOVAPHY_API
+#endif

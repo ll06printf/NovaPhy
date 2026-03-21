@@ -4,6 +4,8 @@
 #include "novaphy/ipc/ipc_config.h"
 #include "novaphy/sim/state.h"
 
+#include "novaphy/novaphy.h"
+
 #include <memory>
 #include <vector>
 
@@ -16,10 +18,10 @@ namespace novaphy {
  * resolution to libuipc's GPU-accelerated Incremental Potential Contact
  * solver, which mathematically guarantees no interpenetration.
  *
- * Implementation is hidden behind a pimpl to isolate libuipc (C++20) headers
- * from the rest of NovaPhy (C++17).
+ * Implementation is hidden behind a pimpl to keep libuipc headers out of the
+ * public NovaPhy interface.
  */
-class IPCWorld {
+class NOVAPHY_API IPCWorld {
 public:
     /**
      * @brief Construct an IPC world from a NovaPhy model.
